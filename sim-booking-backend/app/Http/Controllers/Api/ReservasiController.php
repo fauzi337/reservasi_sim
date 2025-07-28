@@ -46,38 +46,49 @@ class ReservasiController extends Controller
             ], 422);
         }
 
-        $reservasi = new Reservasi();
-        $reservasi->id = $newid;
-        $reservasi->tanggal_reservasi = $validated['tanggal_reservasi'];
-        $reservasi->nik = $validated['nik'];
-        $reservasi->sim_lama = $validated['sim_lama'];
-        $reservasi->nama_lengkap = $validated['nama_lengkap'];
-        $reservasi->jenis_kelamin = $validated['jk'];
-        $reservasi->tempat_lahir = $validated['tempat_lahir'];
-        $reservasi->tanggal_lahir = $validated['tanggal_lahir'];
-        $reservasi->tinggi_badan = $validated['tinggi_badan'];
-        $reservasi->pekerjaan = $validated['pekerjaan'];
-        $reservasi->no_hp = $validated['no_hp'];
-        $reservasi->alamat = $validated['alamat'];
-        $reservasi->pendidikan = $validated['pendidikan'];
-        $reservasi->fotocopy = $validated['fc']; // kalau nama field front-end 'fc'
-        $reservasi->kacamata = $validated['bm'];
-        $reservasi->cacat = $validated['cf'];
-        $reservasi->sertifikat = $validated['sm'];
-        $reservasi->lokasi = $validated['lokasi'];
-        $reservasi->jenis_perpanjangan = $validated['jenis_perpanjangan'];
-        $reservasi->created_at = $today;
-        $reservasi->updated_at = null;
-        $reservasi->statusenabled = true;
-        
-        $reservasi->save();
+        $cekNik = Reservasi::where('statusenabled', true)
+                        ->where('nik', $validated['nik'])
+                        ->select('nik')
+                        ->first();
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Reservasi berhasil disimpan!',
-        ], 201);
+        if ($cekNik != "" ) {
+            return response()->json([
+                'message' => 'Nik Sudah Terdaftar !',
+                'status' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        } else {
+            $reservasi = new Reservasi();
+            $reservasi->id = $newid;
+            $reservasi->tanggal_reservasi = $validated['tanggal_reservasi'];
+            $reservasi->nik = $validated['nik'];
+            $reservasi->sim_lama = $validated['sim_lama'];
+            $reservasi->nama_lengkap = $validated['nama_lengkap'];
+            $reservasi->jenis_kelamin = $validated['jk'];
+            $reservasi->tempat_lahir = $validated['tempat_lahir'];
+            $reservasi->tanggal_lahir = $validated['tanggal_lahir'];
+            $reservasi->tinggi_badan = $validated['tinggi_badan'];
+            $reservasi->pekerjaan = $validated['pekerjaan'];
+            $reservasi->no_hp = $validated['no_hp'];
+            $reservasi->alamat = $validated['alamat'];
+            $reservasi->pendidikan = $validated['pendidikan'];
+            $reservasi->fotocopy = $validated['fc']; // kalau nama field front-end 'fc'
+            $reservasi->kacamata = $validated['bm'];
+            $reservasi->cacat = $validated['cf'];
+            $reservasi->sertifikat = $validated['sm'];
+            $reservasi->lokasi = $validated['lokasi'];
+            $reservasi->jenis_perpanjangan = $validated['jenis_perpanjangan'];
+            $reservasi->created_at = $today;
+            $reservasi->updated_at = null;
+            $reservasi->statusenabled = true;
+            
+            $reservasi->save();
 
-       
+            return response()->json([
+                'status' => true,
+                'message' => 'Reservasi berhasil disimpan!',
+            ], 201);
+        }
 
         // Simpan data ke database jika kamu sudah punya model
         // Contoh tanpa model dulu:
