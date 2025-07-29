@@ -36,3 +36,28 @@
     transform: rotate(360deg);
   }
 }
+
+.toast {
+  transition: all 0.3s ease-in-out;
+}
+
+.toast-body {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.toast-container {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+

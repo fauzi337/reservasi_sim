@@ -4,8 +4,9 @@ import {
 } from "../styles/formClasses"; // path menyesuaikan dengan struktur proyekmu
 import { useEffect, useState } from "react";
 import axios from 'axios';
+import { ToastTypes } from '../constants/toastTypes';
 
-export default function ReservasiPage() {
+export default function ReservasiPage({showToast}) {
   const [today, setToday] = useState("");
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function ReservasiPage() {
     sm: '',
     lokasi: '',
     jenis_perpanjangan: '',
+    si: '',
   });
 
   const handleChange = (e) => {
@@ -48,12 +50,13 @@ export default function ReservasiPage() {
     e.preventDefault(); // cegah reload
 
     try {
-      const res = await axios.post('http://localhost:8000/api/reservasi', formData);
-      alert('Reservasi berhasil!');
-      console.log(res.data);
+    const res = await axios.post('http://localhost:8000/api/reservasi', formData);
+    showToast("Reservasi berhasil!", ToastTypes.sukses);  // success
     } catch (err) {
-      console.error('Reservasi gagal:', err.response?.data);
-      alert('Terjadi kesalahan saat submit.');
+      console.error("Catch error: ", err?.response?.data);
+
+      const errorMsg = err?.response?.data?.message || "Terjadi kesalahan!";
+      showToast(errorMsg, ToastTypes.danger);  // 🟢 pastikan ini terpanggil
     }
   };
 
@@ -73,28 +76,25 @@ export default function ReservasiPage() {
               <label className={labelClass}>Tanggal Reservasi</label>
               <input type="date" name="tanggal_reservasi" onChange={handleChange} min={today} className={inputClass} required />
             </div>
-
             {/* 2. NIK */}
-            <div className={grid_3}>
+            <div className={grid_4}>
               <label className={labelClass}>NIK</label>
               <input type="text" name="nik" onChange={handleChange} maxLength="16" className={inputClass} required />
             </div>
-
-            {/* 3. Nomor SIM Lama */}
-            <div className={grid_3}>
-              <label className={labelClass}>Nomor SIM Lama</label>
-              <input type="text" name="sim_lama" onChange={handleChange} maxLength="15" className={inputClass} required />
-            </div>
-
             {/* 4. Nama Lengkap */}
             <div className={grid_3}>
               <label className={labelClass}>Nama Lengkap</label>
               <input type="text" name="nama_lengkap" onChange={handleChange} className={inputClass} required />
             </div>
+            {/* 8. Tinggi Badan */}
+            <div className={grid_2}>
+              <label className={labelClass}>Tinggi (cm)</label>
+              <input type="text" name="tinggi_badan" onChange={handleChange} maxLength="3" className={inputClass} required />
+            </div>
           </div>
           <div className={grid_head}>
             {/* 5. Jenis Kelamin */}
-            <div className={grid_5}>
+            <div className={grid_6}>
               <label className={labelClass}>Jenis Kelamin</label>
               <div className="flex gap-4">
                 <div className="flex gap-4"> 
@@ -112,7 +112,7 @@ export default function ReservasiPage() {
               </div>
             </div>
             {/* 6. Tempat Lahir */}
-            <div className={grid_4}>
+            <div className={grid_3}>
               <label className={labelClass}>Tempat Lahir</label>
               <input type="text" name="tempat_lahir" onChange={handleChange} className={inputClass} required />
             </div>
@@ -123,12 +123,11 @@ export default function ReservasiPage() {
             </div>
           </div>
           <div className={grid_head}>
-            {/* 8. Tinggi Badan */}
+            {/* 10. No Handphone */}
             <div className={grid_4}>
-              <label className={labelClass}>Tinggi Badan (cm)</label>
-              <input type="text" name="tinggi_badan" onChange={handleChange} maxLength="3" className={inputClass} required />
+              <label className={labelClass}>No Hp</label>
+              <input type="number" name="no_hp" onChange={handleChange} maxLength="12" className={inputClass} required />
             </div>
-
             {/* 9. Pekerjaan */}
             <div className={grid_4}>
               <label className={labelClass}>Pekerjaan</label>
@@ -141,10 +140,10 @@ export default function ReservasiPage() {
                 <option>Lainnya</option>
               </select>
             </div>
-            {/* 10. No Handphone */}
+            {/* 3. Nomor SIM Lama */}
             <div className={grid_4}>
-              <label className={labelClass}>No Handphone</label>
-              <input type="number" name="no_hp" onChange={handleChange} maxLength="12" className={inputClass} required />
+              <label className={labelClass}>Nomor SIM Lama</label>
+              <input type="text" name="sim_lama" onChange={handleChange} maxLength="15" className={inputClass} required />
             </div>
           </div>
           <div className={grid_head}>
@@ -189,6 +188,43 @@ export default function ReservasiPage() {
               </select>
             </div>
           </div>
+          <dic className={grid_head}>
+            <div className={grid_12}>
+              <label className={labelClass}>SIM</label>
+              <div className="flex gap-4">
+                <div className="flex gap-4"> 
+                  <input type="radio" name="si" onChange={handleChange} id="si-a" value="SIM A" className="peer hidden" />
+                  <label htmlFor="si-a" className={radioGroupClassYes}>
+                    SIM A
+                  </label>
+                </div>
+                <div className="flex gap-4">
+                  <input type="radio" name="si" onChange={handleChange} id="si-b1" value="SIM B1" className="peer hidden" />
+                  <label htmlFor="si-b1" className={radioGroupClassYes}>
+                    SIM B1
+                  </label>
+                </div>
+                <div className="flex gap-4"> 
+                  <input type="radio" name="si" onChange={handleChange} id="si-b2" value="SIM B2" className="peer hidden" />
+                  <label htmlFor="si-b2" className={radioGroupClassYes}>
+                    SIM B2
+                  </label>
+                </div>
+                <div className="flex gap-4">
+                  <input type="radio" name="si" onChange={handleChange} id="si-c" value="SIM C" className="peer hidden" />
+                  <label htmlFor="si-c" className={radioGroupClassYes}>
+                    SIM C
+                  </label>
+                </div>
+                <div className="flex gap-4">
+                  <input type="radio" name="si" onChange={handleChange} id="si-d" value="SIM D" className="peer hidden" />
+                  <label htmlFor="si-d" className={radioGroupClassYes}>
+                    SIM D
+                  </label>
+                </div>
+              </div>
+            </div>
+          </dic>
           <div className={grid_head}>
             {/* 13. Foto Copy */}
             <div className={grid_6}>

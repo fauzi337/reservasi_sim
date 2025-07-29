@@ -1,18 +1,54 @@
-import React from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+// import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import BookingForm from './components/BookingForm'; // perhatikan path ini
 import HomePage from './pages/HomePage';
 import ReservasiPage from './pages/ReservasiPage';
+import Toast from './components/Toast';
+import React, { useState, useEffect  } from 'react';
+import * as bootstrap from 'bootstrap';
+window.bootstrap = bootstrap;
 
 
 function App() {
+  const [toast, setToast] = useState({
+    show: false,
+    message: '',
+    type: 'danger',
+  });
+
+  const showToast = (message, type = 'danger') => {
+    // console.log("🔥 showToast DIPANGGIL:", message, type);
+    setToast({ show: true, message, type });
+
+    setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+    }, 3000);
+  };
+
+  useEffect(() => {
+    setToast({ show: false, message: '', type: 'danger' });
+  }, []);
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/reservasi" element={<ReservasiPage />} />
-      </Routes>
-    </Router>
+    <>
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/reservasi" element={<ReservasiPage showToast={showToast} />} />
+        </Routes>
+      </Router>
+
+      {toast.show && toast.message && (
+        <Toast
+          show={toast.show}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
+    </>
   );
 }
 
