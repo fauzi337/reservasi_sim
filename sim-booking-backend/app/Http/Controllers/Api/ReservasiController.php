@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Reservasi;
+use App\Models\PanggilAntrian;
 use Carbon\Carbon;
 
 class ReservasiController extends Controller
@@ -17,6 +18,7 @@ class ReservasiController extends Controller
         $newid = Reservasi::max('id')+1;
         $today = carbon::now();
         $todayDate = date('Y-m-d');
+        $newid2 = PanggilAntrian::max('id')+1;
         
         $validator = Validator::make($request->all(), [
             'tanggal_reservasi' => 'required|date|after_or_equal:today',
@@ -125,6 +127,7 @@ class ReservasiController extends Controller
         $reservasi->no_urut = $count;
         $reservasi->kebutuhan = $kdKebutuhan;
         $reservasi->sim = $validated['si'];
+        $reservasi->status = 'Belum';
         
         $reservasi->save();
 
@@ -143,6 +146,89 @@ class ReservasiController extends Controller
         // ]);
         
         
+    }
+    
+    public function panggilAntrianKesehatan(Request $request)
+    {
+        $newid = PanggilAntrian::max('id')+1;
+        $today = carbon::now();
+        $todayDate = date('Y-m-d');
+
+        $data = Reservasi::where('kebutuhan', $request->jenis_antrian)
+            ->whereDate('tanggal_reservasi', $todayDate)
+            ->where('no_urut', $request->nomor)
+            ->select('id')
+            ->first();
+
+        $PA = new PanggilAntrian();
+        $PA->id = $newid;
+        $PA->no_urut = $request->nomor;
+        $PA->kdkebutuhan = $request->jenis_antrian;
+        $PA->loket = $request->loket;
+        $PA->created_at = $today;
+        $PA->updated_at = null;
+        $PA->statusenabled = true;
+        $PA->status = $request->status;
+        $PA->reservasi_id = $data->id;
+        
+        $saved = $PA->save(); // ✅ simpan dan cek hasilnya
+
+        if ($saved) {
+            // Jika berhasil, update reservasi
+            $updateStReserv = Reservasi::find($data->id);
+            if ($updateStReserv) {
+                $updateStReserv->status = 'dipanggil';
+                $updateStReserv->updated_at = $today;
+                $updateStReserv->save();
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Panggilan Antrian berhasil disimpan dan status reservasi diperbarui!',
+            ], 201);
+        } else {
+            // Jika gagal menyimpan
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal menyimpan panggilan antrian.',
+            ], 500);
+        }
+    }
+
+    public function getStatusAntrian()
+    {
+        $today = Carbon::now();
+        $todayDate = date('Y-m-d');
+
+        // Ambil total reservasi hari ini yang belum dan sudah dipanggil
+        $ppBelum = Reservasi::where('kebutuhan', 'PP')
+            ->whereDate('tanggal_reservasi', $todayDate)
+            ->where('status', 'Belum')
+            ->count();
+
+        $ppSudah = PanggilAntrian::where('kdkebutuhan', 'PP')
+            ->whereDate('created_at', $today)
+            ->where('status', 'dipanggil')
+            ->count();
+
+        $bbBelum = Reservasi::where('kebutuhan', 'BB')
+            ->whereDate('tanggal_reservasi', $todayDate)
+            ->where('status', 'Belum')
+            ->count();
+
+        $bbSudah = PanggilAntrian::where('kdkebutuhan', 'BB')
+            ->whereDate('created_at', $today)
+            ->where('status', 'dipanggil')
+            ->count();
+
+        $dataReservasi = Reservasi::where('statusenabled', true)
+            ->whereDate('tanggal_reservasi', $todayDate)
+            ->get();
+
+        return response()->json([
+            'PP' => ['belum' => $ppBelum, 'sudah' => $ppSudah],
+            'BB' => ['belum' => $bbBelum, 'sudah' => $bbSudah],
+        ]);
     }
 }
 

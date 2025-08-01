@@ -23,3 +23,5 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/reservasi', [ReservasiController::class, 'store']);
+Route::post('/panggil-antrian', [ReservasiController::class, 'panggilAntrianKesehatan']);
+Route::get('/status-antrian', [ReservasiController::class, 'getStatusAntrian']);

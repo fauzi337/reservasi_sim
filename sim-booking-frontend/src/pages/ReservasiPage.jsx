@@ -5,8 +5,10 @@ import {
 import { useEffect, useState } from "react";
 import axios from 'axios';
 import { ToastTypes } from '../constants/toastTypes';
+import { useNavigate } from 'react-router-dom';
 
 export default function ReservasiPage({showToast}) {
+  const navigate = useNavigate(); // letakkan di atas
   const [today, setToday] = useState("");
 
   useEffect(() => {
@@ -52,6 +54,13 @@ export default function ReservasiPage({showToast}) {
     try {
     const res = await axios.post('http://localhost:8000/api/reservasi', formData);
     showToast("Reservasi berhasil!", ToastTypes.sukses);  // success
+    navigate("/resume-antrian", {
+      // state: {
+      //   nomorAnda: "PP-2", // kamu bisa ambil dari response jika disediakan
+      //   nomorSaatIni: "PP-1",
+      //   estimasi,
+      // }
+    });
     } catch (err) {
       console.error("Catch error: ", err?.response?.data);
 

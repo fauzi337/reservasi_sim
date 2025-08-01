@@ -5,6 +5,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import BookingForm from './components/BookingForm'; // perhatikan path ini
 import HomePage from './pages/HomePage';
 import ReservasiPage from './pages/ReservasiPage';
+import ResumeAntrian from './pages/ResumeAntrian';
+import PanggilAntrian from './pages/PanggilAntrian';
+import ViewerLanding from './pages/ViewerLanding';
 import Toast from './components/Toast';
 import React, { useState, useEffect  } from 'react';
 import * as bootstrap from 'bootstrap';
@@ -37,6 +40,9 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/reservasi" element={<ReservasiPage showToast={showToast} />} />
+          <Route path="/resume-antrian" element={<ResumeAntrian showToast={showToast} />} />
+          <Route path="/panggil-antrian" element={<PanggilAntrian showToast={showToast} />} />
+          <Route path="/viewer-landing" element={<ViewerLanding showToast={showToast} />} />
         </Routes>
       </Router>
 

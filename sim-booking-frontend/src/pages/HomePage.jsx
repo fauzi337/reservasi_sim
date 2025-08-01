@@ -13,7 +13,7 @@ export default function HomePage() {
           Aplikasi reservasi online untuk pengurusan SIM secara mudah dan efisien.
         </p>
         <button
-          onClick={() => navigate('/reservasi')}
+          onClick={() => navigate('/viewer-landing')}
           className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all">
           Mulai Reservasi
         </button>
