@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use App\Models\Reservasi;
 use App\Models\PanggilAntrian;
 use Carbon\Carbon;
@@ -53,6 +54,7 @@ class ReservasiController extends Controller
 
         $count = Reservasi::where('jenis_perpanjangan', $validated['jenis_perpanjangan'])
                         ->whereDate('tanggal_reservasi',$todayDate)
+                        ->where('lokasi',$validated['lokasi'])
                         ->count() + 1;
 
         $cekNik = Reservasi::where('statusenabled', true)
@@ -157,6 +159,7 @@ class ReservasiController extends Controller
         $data = Reservasi::where('kebutuhan', $request->jenis_antrian)
             ->whereDate('tanggal_reservasi', $todayDate)
             ->where('no_urut', $request->nomor)
+            ->where('lokasi', $request->lokasi)
             ->select('id')
             ->first();
 
@@ -195,7 +198,7 @@ class ReservasiController extends Controller
         }
     }
 
-    public function getStatusAntrian()
+    public function getStatusAntrian(Request $request)
     {
         $today = Carbon::now();
         $todayDate = date('Y-m-d');
@@ -204,21 +207,29 @@ class ReservasiController extends Controller
         $ppBelum = Reservasi::where('kebutuhan', 'PP')
             ->whereDate('tanggal_reservasi', $todayDate)
             ->where('status', 'Belum')
+            ->where('lokasi', $request->lokasi)
             ->count();
 
-        $ppSudah = PanggilAntrian::where('kdkebutuhan', 'PP')
-            ->whereDate('created_at', $today)
-            ->where('status', 'dipanggil')
+        $ppSudah = PanggilAntrian::from('panggil_antrian_t as pa')
+            ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+            ->where('pa.kdkebutuhan', 'PP')
+            ->whereDate('pa.created_at', $today)
+            ->where('pa.status', 'dipanggil')
+            ->where('rev.lokasi', $request->lokasi)
             ->count();
 
         $bbBelum = Reservasi::where('kebutuhan', 'BB')
             ->whereDate('tanggal_reservasi', $todayDate)
             ->where('status', 'Belum')
+            ->where('lokasi', $request->lokasi)
             ->count();
 
-        $bbSudah = PanggilAntrian::where('kdkebutuhan', 'BB')
-            ->whereDate('created_at', $today)
-            ->where('status', 'dipanggil')
+        $bbSudah = PanggilAntrian::from('panggil_antrian_t as pa')
+            ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+            ->where('pa.kdkebutuhan', 'BB')
+            ->whereDate('pa.created_at', $today)
+            ->where('pa.status', 'dipanggil')
+            ->where('rev.lokasi', $request->lokasi)
             ->count();
 
         $dataReservasi = Reservasi::where('statusenabled', true)
@@ -229,6 +240,146 @@ class ReservasiController extends Controller
             'PP' => ['belum' => $ppBelum, 'sudah' => $ppSudah],
             'BB' => ['belum' => $bbBelum, 'sudah' => $bbSudah],
         ]);
+    }
+
+    public function getStatusJourney(request $request)
+    {
+        $today = Carbon::now();
+        $todayDate = date('Y-m-d');
+
+        $ASIPP = PanggilAntrian::where('statusenabled', true)
+            ->whereDate('created_at', $todayDate)
+            ->where('status', 'dipanggil')
+            ->where('kdkebutuhan', 'PP')
+            ->orderBy('created_at', 'desc')
+            ->select('no_urut', 'kdkebutuhan')
+            ->first();
+
+        $ASIBB = PanggilAntrian::where('statusenabled', true)
+            ->whereDate('created_at', $todayDate)
+            ->where('status', 'dipanggil')
+            ->where('kdkebutuhan', 'BB')
+            ->orderBy('created_at', 'desc')
+            ->select('no_urut', 'kdkebutuhan')
+            ->first();
+
+        return response()->json([
+            'saatiniPP' => $ASIPP->kdkebutuhan . '-' . $ASIPP->no_urut,
+            'saatiniBB' => $ASIBB->kdkebutuhan . '-' . $ASIBB->no_urut,
+        ]);
+    }
+
+    public function getDataByNik(Request $request)
+    {
+        $today = Carbon::now();
+        $todayDate = date('Y-m-d');
+        $estimasiLayanPP = '';
+        $estimasiLayanBB = '';
+        // \Log::info('Cek NIK dari frontend', [
+        //     'nik' => $request->nik,
+        //     'request_all' => $request->all(),
+        // ]);
+        
+        try {
+            if (!$request->has('nik')) {
+                return response()->json([
+                    'message' => 'NIK tidak ditemukan dalam request!',
+                    'data' => $request->all()
+                ], 400);
+            }
+
+            $DSJ = Reservasi::where('statusenabled', true)
+                ->where('nik', $request->nik)
+                // ->select(DB::raw("CONCAT(REPLACE(TRIM(kebutuhan), ' ', ''), '-', no_urut) AS noantri"))
+                ->select('kebutuhan','no_urut','lokasi')
+                ->first();
+
+            $ASIPP = PanggilAntrian::from('panggil_antrian_t as pa')
+                ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+                ->where('pa.statusenabled', true)
+                ->whereDate('pa.created_at', $todayDate)
+                ->where('pa.status', 'dipanggil')
+                ->where('pa.kdkebutuhan', 'PP')
+                ->where('rev.lokasi', $DSJ->lokasi)
+                ->orderBy('pa.created_at', 'desc')
+                ->select('pa.no_urut', 'pa.kdkebutuhan')
+                ->first();
+
+            $ASIBB = PanggilAntrian::from('panggil_antrian_t as pa')
+                ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+                ->where('pa.statusenabled', true)
+                ->whereDate('pa.created_at', $todayDate)
+                ->where('pa.status', 'dipanggil')
+                ->where('pa.kdkebutuhan', 'BB')
+                ->where('rev.lokasi', $DSJ->lokasi)
+                ->orderBy('pa.created_at', 'desc')
+                ->select('pa.no_urut', 'pa.kdkebutuhan')
+                ->first();
+
+            $jmlASIPP = PanggilAntrian::from('panggil_antrian_t as pa')
+                ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+                ->where('pa.statusenabled', true)
+                ->whereDate('pa.created_at', $todayDate)
+                ->where('pa.status', 'dipanggil')
+                ->where('pa.kdkebutuhan', 'PP')
+                ->where('rev.lokasi', $DSJ->lokasi)
+                ->orderBy('pa.created_at', 'desc')
+                ->select('pa.no_urut', 'pa.kdkebutuhan')
+                ->count();
+
+            $jmlASIBB = PanggilAntrian::from('panggil_antrian_t as pa')
+                ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+                ->where('pa.statusenabled', true)
+                ->whereDate('pa.created_at', $todayDate)
+                ->where('pa.status', 'dipanggil')
+                ->where('pa.kdkebutuhan', 'BB')
+                ->where('rev.lokasi', $DSJ->lokasi)
+                ->orderBy('pa.created_at', 'desc')
+                ->select('pa.no_urut', 'pa.kdkebutuhan')
+                ->count();
+
+            if (!$DSJ) {
+                return response()->json([
+                    'message' => 'Data tidak ditemukan untuk NIK tersebut.',
+                ], 404);
+            }
+
+            if ($DSJ->no_urut == $jmlASIPP) {
+                $estimasiLayanPP = 0;
+            } else {
+                $estimasiLayanPP = max(0, ($DSJ->no_urut - $jmlASIPP)) * 5;
+            }
+
+            if ($DSJ->no_urut == $jmlASIBB) {
+                $estimasiLayanBB = 0;
+            } else {
+                $estimasiLayanBB = max(0, ($DSJ->no_urut - $jmlASIBB)) * 5;
+            }
+
+            return response()->json([
+                'nomoranda' => $DSJ->kebutuhan . '-' . $DSJ->no_urut,
+                'lokasi' => $DSJ->lokasi,
+                'saatiniPP' => $ASIPP ? $ASIPP->kdkebutuhan . '-' . $ASIPP->no_urut : null,
+                'saatiniBB' => $ASIBB ? $ASIBB->kdkebutuhan . '-' . $ASIBB->no_urut : null,
+                'estimasiLayanPP' => $estimasiLayanPP,
+                'estimasiLayanBB' => $estimasiLayanBB,
+                'data' => $DSJ,
+            ]);
+            // return response()->json([
+            //     'method' => $request->method(),
+            //     'content_type' => $request->header('Content-Type'),
+            //     'raw_body' => $request->getContent(),
+            //     'request_all' => $request->all(),
+            //     'nik' => $request->nik,
+            // ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Terjadi kesalahan di server.',
+                'error' => $e->getMessage(),
+                // 'data' => $DSJ,
+            ], 500);
+        }
     }
 }
 

@@ -32,3 +32,6 @@ export const grid_9 = "col-span-9";
 export const grid_10 = "col-span-10";
 export const grid_11 = "col-span-11";
 export const grid_12 = "col-span-12";
+
+//mengatur posisi item
+export const itemPosition = "d-flex gap-3 mt-6 mb-4";

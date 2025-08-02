@@ -22,6 +22,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/booking/{id}/status', [BookingController::class, 'updateStatus']);
 });
 
+//Modul Reservasi
 Route::post('/reservasi', [ReservasiController::class, 'store']);
 Route::post('/panggil-antrian', [ReservasiController::class, 'panggilAntrianKesehatan']);
+Route::post('/getAntrian', [ReservasiController::class, 'getDataByNik']);
+
 Route::get('/status-antrian', [ReservasiController::class, 'getStatusAntrian']);
+Route::get('/get-status-journey', [ReservasiController::class, 'getStatusJourney']);
