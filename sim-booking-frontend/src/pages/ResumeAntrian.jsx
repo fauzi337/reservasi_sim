@@ -13,12 +13,24 @@ export default function ResumeAntrian({ showToast }) {
   const location = useLocation();
   // const { nomorAnda = "PP-2", nomorSaatIni = "PP-1", estimasi = 0 } = location.state || {};
 
+  const proper = (text) => {
+    if (!text) return '';
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  };
+
   const [resumeData, setResumeData] = useState({
     nomorAnda: '',
     nomorSaatIniPP: '',
     nomorSaatIniBB: '',
     estimasi: 0,
-    lokasi: 'Silahkan Masukan NIK Terlebih Dahulu !'
+    lokasi: 'Silahkan Masukan NIK Terlebih Dahulu !',
+    status: {
+      kesehatan: 'Belum',
+      verifikasi: 'Belum',
+      pembayaran: 'Belum',
+      foto: 'Belum',
+      pengambilan: 'Belum'
+    }
   });
 
   const [antrianSaatIni, setAntrianData] = useState({
@@ -29,14 +41,14 @@ export default function ResumeAntrian({ showToast }) {
   });
 
   const steps = [
-    "Pemanggilan Cek Kesehatan",
-    "Pemanggilan Verifikasi barcode",
-    "Pemanggilan Pembayaran",
-    "Pemanggilan Antrian Ambil Foto",
-    "Pemanggilan Antrian Ambil SIM",
+    { label: "Pemanggilan Cek Kesehatan", key: "kesehatan" },
+    { label: "Pemanggilan Verifikasi barcode", key: "verifikasi" },
+    { label: "Pemanggilan Pembayaran", key: "pembayaran" },
+    { label: "Pemanggilan Antrian Ambil Foto", key: "foto" },
+    { label: "Pemanggilan Antrian Ambil SIM", key: "pengambilan" }
   ];
 
-  const status = "Belum"; // default status
+  // const status = "Belum"; // default status
 
   // Set tanggal hari ini
   useEffect(() => {
@@ -89,13 +101,21 @@ export default function ResumeAntrian({ showToast }) {
       });
       const data = res.data;
       const getNomor = res.data.nomoranda;
+      const status = res.data.status;
 
       setResumeData({
         nomorAnda: getNomor, // atau sesuaikan struktur datanya
         estimasi: data.data.kebutuhan == 'PP' ? data.estimasiLayanPP : data.estimasiLayanBB, // estimasi bisa dihitung dari posisi antrian x waktu rata-rata
         lokasi: data.lokasi,
         nomorSaatIniPP: data.saatiniPP,
-        nomorSaatIniBB: data.saatiniBB
+        nomorSaatIniBB: data.saatiniBB,
+        status: {
+          kesehatan: status.kesehatan == null ? 'Belum' : proper(status.kesehatan),
+          verifikasi: status.verifikasi == null ? 'Belum': proper(status.verifikasi),
+          pembayaran: status.pembayaran == null ? 'Belum': proper(status.pembayaran),
+          foto: status.foto == null ? 'Belum': proper(status.foto),
+          pengambilan: status.pengambilan == null ? 'Belum' : proper(status.pengambilan)
+        }
       });
 
       // console.log("Response dari getAntrian:", res.data);
@@ -125,7 +145,7 @@ export default function ResumeAntrian({ showToast }) {
           </div>
           <div className="bg-yellow-50 p-4 rounded-md">
             <div className="font-semibold">Nomor Antrian Saat Ini</div>
-            <div className="text-xl font-bold text-yellow-700">{resumeData.nomorSaatIniPP || "Belum tersedia"} / {resumeData.nomorSaatIniBB || "Belum tersedia"}</div>
+            <div className={`text-xl font-bold ${resumeData.nomorSaatIniPP == null ? 'text-yellow-700' : 'blinking text-yellow-700'}`}>{resumeData.nomorSaatIniPP || "Belum tersedia"} / {resumeData.nomorSaatIniBB || "Belum tersedia"}</div>
           </div>
         </div>
 
@@ -153,14 +173,18 @@ export default function ResumeAntrian({ showToast }) {
         <div className="divide-y border rounded-b-md">
           {steps.map((step, index) => (
             <div key={index} className="flex justify-between px-4 py-3 bg-white">
-              <span>{index + 1}. {step}</span>
-              <span className="text-blue-700 font-medium">{status}</span>
+              <span>{index + 1}. {step.label}</span>
+              <span
+                className={`font-medium ${resumeData.status[step.key] === 'Sudah'? 'text-green-600': 
+                resumeData.status[step.key] === 'Belum' ? 'text-blue-700' : 'text-yellow-600'}`}>
+                {resumeData.status[step.key] ?? 'Belum'}
+              </span>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 text-sm text-gray-600">
-          <p><strong>Note Status:</strong> Belum, Dilayani, Sudah</p>
+        <div className="text-m text-red-300">
+          <p><strong>*Note:</strong> ...</p>
         </div>
       </div>
     </div>

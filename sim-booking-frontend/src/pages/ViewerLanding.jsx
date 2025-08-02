@@ -25,13 +25,13 @@ function ViewerLanding(params) {
 
             {/* Tombol-tombol */}
             <div className="flex flex-col md:flex-row justify-center gap-4">
-                <Link to="/reservasi" className="btn btn-success">
+                <Link to="/reservasi" className="btn btn-info">
                 Buat Reservasi
                 </Link>
                 <Link to="/resume-antrian" className="btn btn-info">
                 Lihat Resume Antrian
                 </Link>
-                <Link to="/panggil-antrian" className="btn btn-primary">
+                <Link to="/panggil-antrian" className="btn btn-info">
                 Panggil Antrian
                 </Link>
             </div>

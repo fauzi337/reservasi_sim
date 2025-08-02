@@ -11,6 +11,7 @@ import ViewerLanding from './pages/ViewerLanding';
 import Toast from './components/Toast';
 import React, { useState, useEffect  } from 'react';
 import * as bootstrap from 'bootstrap';
+import './styles/global.css';
 window.bootstrap = bootstrap;
 
 
