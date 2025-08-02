@@ -177,15 +177,19 @@ export default function ResumeAntrian({ showToast }) {
               />
             </div>
 
-            <div>
-              <label className="block mb-1 font-medium text-gray-600">Tgl Reservasi Anda</label>
-              <div className="p-2 bg-gray-100 rounded-md">{resumeData.tglReserv}</div>
-            </div>
+            {resumeData.nomorAnda && (
+                <>
+              <div>
+                <label className="block mb-1 font-medium text-gray-600">Tgl Reservasi Anda</label>
+                <div className="p-2 bg-gray-100 rounded-md">{resumeData.tglReserv}</div>
+              </div>
 
-            <div>
-              <label className="block mb-1 font-medium text-gray-600">Hari ini, Tanggal:</label>
-              <div className="p-2 bg-gray-100 rounded-md">{today}</div>
-            </div>
+              <div>
+                <label className="block mb-1 font-medium text-gray-600">Hari ini, Tanggal:</label>
+                <div className="p-2 bg-gray-100 rounded-md">{today}</div>
+              </div>
+              </>
+              )}
           </div>
         </div>
 
