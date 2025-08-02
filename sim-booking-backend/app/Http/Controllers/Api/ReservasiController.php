@@ -291,7 +291,7 @@ class ReservasiController extends Controller
             $DSJ = Reservasi::where('statusenabled', true)
                 ->where('nik', $request->nik)
                 // ->select(DB::raw("CONCAT(REPLACE(TRIM(kebutuhan), ' ', ''), '-', no_urut) AS noantri"))
-                ->select('kebutuhan','no_urut','lokasi',
+                ->select('kebutuhan','no_urut','lokasi','tanggal_reservasi',
                 DB::raw("TRIM(status) AS status,TRIM(status_barcode) AS status_barcode,TRIM(status_bayar) AS status_bayar,
                 TRIM(status_foto) AS status_foto,TRIM(status_sim) AS status_sim"))
                 ->first();
