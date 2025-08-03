@@ -6,6 +6,6 @@
 # Author :
   # Fauzi Akbar
   # Web Developer
-  # Email: fauzi.akbar.fa24@email.com
+  # Email: fauzi.akbar.fa24@gmail.com
   # GitHub: github.com/fauzi337
   # LinkedIn: linkedin.com/in/fauziakbar
