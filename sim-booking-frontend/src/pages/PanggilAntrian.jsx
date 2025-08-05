@@ -22,6 +22,7 @@ function PanggilAntrianPage({ showToast }) {
       PP: { belum: 0, sudah: 0 },
       BB: { belum: 0, sudah: 0 },
   });
+  const [dataPanggil, setDataPanggil] = useState({});
 
   useEffect(() => {
     const fetchAntrian = async () => {
@@ -92,7 +93,7 @@ function PanggilAntrianPage({ showToast }) {
 
       // ✅ POST ke Laravel API
       try {
-        await axios.post('http://localhost:8000/api/panggil-antrian', {
+        const response = await axios.post('http://localhost:8000/api/panggil-antrian', {
           jenis_antrian: jenis,
           nomor: nextNumber,
           loket: loket,
@@ -100,6 +101,7 @@ function PanggilAntrianPage({ showToast }) {
           lokasi: lokasi,
           // waktu: new Date().toISOString(), // waktu panggil ISO format
         });
+        setDataPanggil(response.data);
 
         showToast(`Memanggil antrian nomor ${jenis} ${nextNumber}`, ToastTypes.sukses);
       } catch (error) {
@@ -199,7 +201,7 @@ function PanggilAntrianPage({ showToast }) {
         <>
           {nomorAntrian && (
             <div className="alert alert-info mt-3" role="alert">
-              Nomor antrian yang dipanggil: <strong>{jenis} {nomorAntrian} {loket}</strong>
+              Nomor antrian yang dipanggil: <strong>{jenis} {nomorAntrian} {loket} , Dengan NIK : {dataPanggil.nik} </strong>
             </div>
           )}
           <div className="mt-4">

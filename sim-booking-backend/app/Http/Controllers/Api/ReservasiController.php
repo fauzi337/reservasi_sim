@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use App\Models\Reservasi;
 use App\Models\PanggilAntrian;
+use App\Models\Kesehatan;
 use Carbon\Carbon;
 
 class ReservasiController extends Controller
@@ -49,6 +50,7 @@ class ReservasiController extends Controller
                 'message' => 'Reservasi gagal!',
                 'status' => false,
                 'errors' => $validator->errors(),
+                'as' => '@Kurisu'
             ], 422);
         }
 
@@ -84,6 +86,7 @@ class ReservasiController extends Controller
                 'message' => 'Nik Sudah Terdaftar !',
                 'status' => false,
                 'errors' => $validator->errors(),
+                'as' => '@Kurisu'
             ], 422);
         } 
 
@@ -92,6 +95,7 @@ class ReservasiController extends Controller
                 'message' => 'Sim Lama Sudah Terdaftar !',
                 'status' => false,
                 'errors' => $validator->errors(),
+                'as' => '@Kurisu'
             ], 422);
         } 
 
@@ -100,6 +104,7 @@ class ReservasiController extends Controller
                 'message' => 'No HP Sudah Terdaftar !',
                 'status' => false,
                 'errors' => $validator->errors(),
+                'as' => '@Kurisu'
             ], 422);
         } 
 
@@ -136,6 +141,7 @@ class ReservasiController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Reservasi berhasil disimpan!',
+            'as' => '@Kurisu'
         ], 201);
         
 
@@ -160,7 +166,7 @@ class ReservasiController extends Controller
             ->whereDate('tanggal_reservasi', $todayDate)
             ->where('no_urut', $request->nomor)
             ->where('lokasi', $request->lokasi)
-            ->select('id')
+            ->select('id','nik')
             ->first();
 
         $PA = new PanggilAntrian();
@@ -188,12 +194,15 @@ class ReservasiController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Panggilan Antrian berhasil disimpan dan status reservasi diperbarui!',
+                'nik' => $data->nik,
+                'as' => '@Kurisu'
             ], 201);
         } else {
             // Jika gagal menyimpan
             return response()->json([
                 'status' => false,
                 'message' => 'Gagal menyimpan panggilan antrian.',
+                'as' => '@Kurisu'
             ], 500);
         }
     }
@@ -239,6 +248,7 @@ class ReservasiController extends Controller
         return response()->json([
             'PP' => ['belum' => $ppBelum, 'sudah' => $ppSudah],
             'BB' => ['belum' => $bbBelum, 'sudah' => $bbSudah],
+            'as' => '@Kurisu'
         ]);
     }
 
@@ -266,6 +276,7 @@ class ReservasiController extends Controller
         return response()->json([
             'saatiniPP' => $ASIPP->kdkebutuhan . '-' . $ASIPP->no_urut,
             'saatiniBB' => $ASIBB->kdkebutuhan . '-' . $ASIBB->no_urut,
+            'as' => '@Kurisu'
         ]);
     }
 
@@ -284,14 +295,15 @@ class ReservasiController extends Controller
             if (!$request->has('nik')) {
                 return response()->json([
                     'message' => 'NIK tidak ditemukan dalam request!',
-                    'data' => $request->all()
+                    'data' => $request->all(),
+                    'as' => '@Kurisu'
                 ], 400);
             }
 
             $DSJ = Reservasi::where('statusenabled', true)
                 ->where('nik', $request->nik)
                 // ->select(DB::raw("CONCAT(REPLACE(TRIM(kebutuhan), ' ', ''), '-', no_urut) AS noantri"))
-                ->select('kebutuhan','no_urut','lokasi','tanggal_reservasi',
+                ->select('kebutuhan','no_urut','lokasi','tanggal_reservasi','id','nama_lengkap','sim','jenis_perpanjangan','alamat',
                 DB::raw("TRIM(status) AS status,TRIM(status_barcode) AS status_barcode,TRIM(status_bayar) AS status_bayar,
                 TRIM(status_foto) AS status_foto,TRIM(status_sim) AS status_sim"))
                 ->first();
@@ -374,19 +386,58 @@ class ReservasiController extends Controller
                     'pengambilan' => $DSJ->status_sim
                 ],
             ]);
-            // return response()->json([
-            //     'method' => $request->method(),
-            //     'content_type' => $request->header('Content-Type'),
-            //     'raw_body' => $request->getContent(),
-            //     'request_all' => $request->all(),
-            //     'nik' => $request->nik,
-            // ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Terjadi kesalahan di server.',
                 'error' => $e->getMessage(),
-                // 'data' => $DSJ,
+                'as' => '@Kurisu'
+            ], 500);
+        }
+    }
+
+    public function saveKesehatan(Request $request)
+    {
+        $newid = Kesehatan::max('id')+1;
+        $today = carbon::now();
+        $todayDate = date('Y-m-d');
+
+        $IK = new Kesehatan();
+        $IK->id = $newid;
+        $IK->tekanan_darah = $request->td;
+        $IK->tinggi_badan = $request->tb;
+        $IK->berat_badan = $request->bb;
+        $IK->suhu = $request->suhu;
+        $IK->nadi = $request->nadi;
+        $IK->pernafasan = $request->nafas;
+        $IK->created_at = $today;
+        $IK->updated_at = null;
+        $IK->statusenabled = true;
+        $IK->reservasi_id = $request->reserv_id;
+        
+        $saved = $IK->save(); // ✅ simpan dan cek hasilnya
+
+        if ($saved) {
+            // Jika berhasil, update reservasi
+            $updateStReserv = Reservasi::find($request->reserv_id);
+            if ($updateStReserv) {
+                $updateStReserv->status = 'Sudah';
+                $updateStReserv->staus_barcode = 'Belum';
+                $updateStReserv->updated_at = $today;
+                $updateStReserv->save();
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Input Kesehatan berhasil disimpan dan status reservasi diperbarui!',
+                'as' => '@Kurisu'
+            ], 201);
+        } else {
+            // Jika gagal menyimpan
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal menyimpan Input Kesehatan.',
+                'as' => '@Kurisu'
             ], 500);
         }
     }

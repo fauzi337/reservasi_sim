@@ -8,6 +8,7 @@ import ReservasiPage from './pages/ReservasiPage';
 import ResumeAntrian from './pages/ResumeAntrian';
 import PanggilAntrian from './pages/PanggilAntrian';
 import ViewerLanding from './pages/ViewerLanding';
+import InputKesehatan from './pages/InputKesehatan';
 import Toast from './components/Toast';
 import React, { useState, useEffect  } from 'react';
 import * as bootstrap from 'bootstrap';
@@ -44,6 +45,7 @@ function App() {
           <Route path="/resume-antrian" element={<ResumeAntrian showToast={showToast} />} />
           <Route path="/panggil-antrian" element={<PanggilAntrian showToast={showToast} />} />
           <Route path="/viewer-landing" element={<ViewerLanding showToast={showToast} />} />
+          <Route path="/input-kesehatan" element={<InputKesehatan showToast={showToast} />} />
         </Routes>
       </Router>
 

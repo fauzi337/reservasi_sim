@@ -34,6 +34,9 @@ function ViewerLanding(params) {
                 <Link to="/panggil-antrian" className="btn btn-info">
                 Panggil Antrian
                 </Link>
+                <Link to="/input-kesehatan" className="btn btn-info">
+                Input Kesehatan
+                </Link>
             </div>
             </div>
         </div>
