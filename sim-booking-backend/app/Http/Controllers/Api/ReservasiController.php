@@ -161,6 +161,7 @@ class ReservasiController extends Controller
         $newid = PanggilAntrian::max('id')+1;
         $today = carbon::now();
         $todayDate = date('Y-m-d');
+        $kondisi = true;
 
         $data = Reservasi::where('kebutuhan', $request->jenis_antrian)
             ->whereDate('tanggal_reservasi', $todayDate)
@@ -169,41 +170,78 @@ class ReservasiController extends Controller
             ->select('id','nik')
             ->first();
 
-        $PA = new PanggilAntrian();
-        $PA->id = $newid;
-        $PA->no_urut = $request->nomor;
-        $PA->kdkebutuhan = $request->jenis_antrian;
-        $PA->loket = $request->loket;
-        $PA->created_at = $today;
-        $PA->updated_at = null;
-        $PA->statusenabled = true;
-        $PA->status = $request->status;
-        $PA->reservasi_id = $data->id;
-        
-        $saved = $PA->save(); // ✅ simpan dan cek hasilnya
+        $antrianVerifikasi = "";
+        if ($data == null) {
+           $antrianVerifikasi = Kesehatan::whereDate('created_at', $todayDate)
+            ->where('no_urut', $request->nomor)
+            ->select('reservasi_id')
+            ->first();
 
-        if ($saved) {
-            // Jika berhasil, update reservasi
-            $updateStReserv = Reservasi::find($data->id);
-            if ($updateStReserv) {
-                $updateStReserv->status = 'dipanggil';
-                $updateStReserv->updated_at = $today;
-                $updateStReserv->save();
+            $cekStatus = "";
+            if ($antrianVerifikasi != null){
+                $cekStatus = Reservasi::where('id', $antrianVerifikasi['reservasi_id'])
+                ->where('status_barcode', 'Belum')
+                ->select('nik')
+                ->first();
+                $verifikasiBarcode = true;
             }
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Panggilan Antrian berhasil disimpan dan status reservasi diperbarui!',
-                'nik' => $data->nik,
-                'as' => '@Kurisu'
-            ], 201);
-        } else {
-            // Jika gagal menyimpan
-            return response()->json([
-                'status' => false,
-                'message' => 'Gagal menyimpan panggilan antrian.',
-                'as' => '@Kurisu'
-            ], 500);
+            if ($cekStatus == null) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal menyimpan panggilan antrian.',
+                    'as' => '@Kurisu'
+                ], 500);
+            } else {
+                $kondisi = true;
+            }
+        }
+
+        if ($kondisi == true) {
+            $PA = new PanggilAntrian();
+            $PA->id = $newid;
+            $PA->no_urut = $request->nomor;
+            $PA->kdkebutuhan = $request->jenis_antrian;
+            $PA->loket = $request->loket;
+            $PA->created_at = $today;
+            $PA->updated_at = null;
+            $PA->statusenabled = true;
+            $PA->status = $request->status;
+            if ($verifikasiBarcode = true) {
+                $PA->reservasi_id = $antrianVerifikasi->reservasi_id;
+            } else {
+                $PA->reservasi_id = $data->id;
+            }
+            
+            $saved = $PA->save(); // ✅ simpan dan cek hasilnya
+
+            if ($saved) {
+                // Jika berhasil, update reservasi
+                $updateStReserv = Reservasi::find($verifikasiBarcode = true ? $antrianVerifikasi->reservasi_id : $data->id);
+                if ($updateStReserv) {
+                    if ($verifikasiBarcode = true) {
+                        $updateStReserv->status_barcode = 'dipanggil';
+                    } else {
+                        $updateStReserv->status = 'dipanggil';
+                    }
+                    $updateStReserv->updated_at = $today;
+                    $updateStReserv->save();
+                }
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Panggilan Antrian berhasil disimpan dan status reservasi diperbarui!',
+                    'nik' => $verifikasiBarcode = true ? $cekStatus->nik : $data->nik,
+                    'as' => '@Kurisu'
+                ], 201);
+            } else {
+                // Jika gagal menyimpan
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal menyimpan panggilan antrian.',
+                    'as' => '@Kurisu'
+                ], 500);
+            }
         }
     }
 
@@ -241,6 +279,20 @@ class ReservasiController extends Controller
             ->where('rev.lokasi', $request->lokasi)
             ->count();
 
+        $vbBelum = Kesehatan::from('kesehatan_t as ks')
+            ->join('reservasis as rev', 'rev.id','=','ks.reservasi_id')
+            ->whereDate('ks.created_at', $todayDate)
+            ->where('rev.status_barcode', 'Belum')
+            ->count();
+
+        $vbSudah = PanggilAntrian::from('panggil_antrian_t as pa')
+            ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+            ->where('pa.kdkebutuhan', 'VB')
+            ->whereDate('pa.created_at', $today)
+            ->where('pa.status', 'dipanggil')
+            ->where('rev.lokasi', $request->lokasi)
+            ->count();
+
         $dataReservasi = Reservasi::where('statusenabled', true)
             ->whereDate('tanggal_reservasi', $todayDate)
             ->get();
@@ -248,7 +300,7 @@ class ReservasiController extends Controller
         return response()->json([
             'PP' => ['belum' => $ppBelum, 'sudah' => $ppSudah],
             'BB' => ['belum' => $bbBelum, 'sudah' => $bbSudah],
-            'as' => '@Kurisu'
+            'VB' => ['belum' => $vbBelum, 'sudah' => $vbSudah],
         ]);
     }
 
@@ -401,6 +453,8 @@ class ReservasiController extends Controller
         $newid = Kesehatan::max('id')+1;
         $today = carbon::now();
         $todayDate = date('Y-m-d');
+        $no_antri = Kesehatan::whereDate('created_at',$todayDate)
+                            ->count('no_urut')+1;
 
         $IK = new Kesehatan();
         $IK->id = $newid;
@@ -414,6 +468,7 @@ class ReservasiController extends Controller
         $IK->updated_at = null;
         $IK->statusenabled = true;
         $IK->reservasi_id = $request->reserv_id;
+        $IK->no_urut = $no_antri;
         
         $saved = $IK->save(); // ✅ simpan dan cek hasilnya
 
@@ -422,7 +477,7 @@ class ReservasiController extends Controller
             $updateStReserv = Reservasi::find($request->reserv_id);
             if ($updateStReserv) {
                 $updateStReserv->status = 'Sudah';
-                $updateStReserv->staus_barcode = 'Belum';
+                $updateStReserv->status_barcode = 'Belum';
                 $updateStReserv->updated_at = $today;
                 $updateStReserv->save();
             }

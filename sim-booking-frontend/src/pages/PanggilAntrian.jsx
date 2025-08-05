@@ -14,13 +14,14 @@ function PanggilAntrianPage({ showToast }) {
   const [lokasi, setLokasi] = useState(localStorage.getItem('lokasi') || '');
   const [showFullForm, setShowFullForm] = useState(localStorage.getItem('showFullForm') === 'true');
 
-  const jenisAntrianList = ['PP', 'BB'];
+  const jenisAntrianList = ['PP', 'BB','VB'];
   const loketList = ['Loket 1', 'Loket 2', 'Loket 3'];
   const lokasiList = ['Polres A', 'Polres B', 'Polres C'];
 
   const [antrianData, setAntrianData] = useState({
       PP: { belum: 0, sudah: 0 },
       BB: { belum: 0, sudah: 0 },
+      VB: { belum: 0, sudah: 0 },
   });
   const [dataPanggil, setDataPanggil] = useState({});
 

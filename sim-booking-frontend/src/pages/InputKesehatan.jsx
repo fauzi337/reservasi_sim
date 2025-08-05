@@ -101,6 +101,32 @@ export default function InputKesehatan({ showToast }) {
   };
 
   const saveData = async () => {
+
+    if (kesehatanData.td == "") {
+      showToast('Tekanan Darah tidak boleh kosong ! ', ToastTypes.danger);
+      return;
+    }
+    if (kesehatanData.tb == "") {
+      showToast('Tinggi Badan tidak boleh kosong ! ', ToastTypes.danger);
+      return;
+    }
+    if (kesehatanData.bb == "") {
+      showToast('Berat Badan tidak boleh kosong ! ', ToastTypes.danger);
+      return;
+    }
+    if (kesehatanData.suhu == "") {
+      showToast('Suhu tidak boleh kosong ! ', ToastTypes.danger);
+      return;
+    }
+    if (kesehatanData.nadi == "") {
+      showToast('Nadi tidak boleh kosong ! ', ToastTypes.danger);
+      return;
+    }
+    if (kesehatanData.nafas == "") {
+      showToast('Pernafasan tidak boleh kosong ! ', ToastTypes.danger);
+      return;
+    }
+
     const payload = {
       ...kesehatanData,
       reserv_id: resumeData.reservasi_id
@@ -108,6 +134,7 @@ export default function InputKesehatan({ showToast }) {
     try {
       const response = await axios.post('http://localhost:8000/api/save-kesehatan', payload);
       showToast('Input Kesehatan Berhasil ', ToastTypes.sukses);
+      window.location.reload();
     } catch (error) {
       showToast('Gagal menyimpan data ke database', ToastTypes.error);
     }
