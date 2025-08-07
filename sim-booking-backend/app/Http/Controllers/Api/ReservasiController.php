@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 use App\Models\Reservasi;
 use App\Models\PanggilAntrian;
 use App\Models\Kesehatan;
+use App\Models\Pembayaran;
 use Carbon\Carbon;
 
 class ReservasiController extends Controller
@@ -158,46 +160,36 @@ class ReservasiController extends Controller
     
     public function panggilAntrianKesehatan(Request $request)
     {
-        $newid = PanggilAntrian::max('id')+1;
-        $today = carbon::now();
-        $todayDate = date('Y-m-d');
-        $kondisi = true;
+        try {
+            $newid = PanggilAntrian::max('id') + 1;
+            $today = Carbon::now();
+            $todayDate = $today->toDateString();
+            $nik = '';
+            $res_id = '';
 
-        $data = Reservasi::where('kebutuhan', $request->jenis_antrian)
-            ->whereDate('tanggal_reservasi', $todayDate)
-            ->where('no_urut', $request->nomor)
-            ->where('lokasi', $request->lokasi)
-            ->select('id','nik')
-            ->first();
-
-        $antrianVerifikasi = "";
-        if ($data == null) {
-           $antrianVerifikasi = Kesehatan::whereDate('created_at', $todayDate)
-            ->where('no_urut', $request->nomor)
-            ->select('reservasi_id')
-            ->first();
-
-            $cekStatus = "";
-            if ($antrianVerifikasi != null){
-                $cekStatus = Reservasi::where('id', $antrianVerifikasi['reservasi_id'])
-                ->where('status_barcode', 'Belum')
-                ->select('nik')
-                ->first();
-                $verifikasiBarcode = true;
-            }
-
-            if ($cekStatus == null) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Gagal menyimpan panggilan antrian.',
-                    'as' => '@Kurisu'
-                ], 500);
+            if ($request->jenis_antrian == 'VB') {
+                $DK = Kesehatan::from('kesehatan_t as ks')
+                    ->join('reservasis as rev','rev.id','=','ks.reservasi_id')
+                    ->whereDate('ks.created_at', $todayDate)
+                    ->select('rev.id','rev.nik')
+                    ->first();
+                $nik = $DK->nik;
+                $res_id = $DK->id;
+                                
             } else {
-                $kondisi = true;
-            }
-        }
+                // Coba cari data reservasi utama
+                $data = Reservasi::where('kebutuhan', $request->jenis_antrian)
+                    ->whereDate('tanggal_reservasi', $todayDate)
+                    ->where('no_urut', $request->nomor)
+                    ->where('lokasi', $request->lokasi)
+                    ->select('id', 'nik')
+                    ->first();
+                $nik = $data->nik;
+                $res_id = $data->id;
 
-        if ($kondisi == true) {
+            }
+            
+            // Buat pemanggilan antrian
             $PA = new PanggilAntrian();
             $PA->id = $newid;
             $PA->no_urut = $request->nomor;
@@ -207,41 +199,49 @@ class ReservasiController extends Controller
             $PA->updated_at = null;
             $PA->statusenabled = true;
             $PA->status = $request->status;
-            if ($verifikasiBarcode = true) {
-                $PA->reservasi_id = $antrianVerifikasi->reservasi_id;
-            } else {
-                $PA->reservasi_id = $data->id;
-            }
-            
-            $saved = $PA->save(); // ✅ simpan dan cek hasilnya
+            $PA->reservasi_id = $res_id;
 
-            if ($saved) {
-                // Jika berhasil, update reservasi
-                $updateStReserv = Reservasi::find($verifikasiBarcode = true ? $antrianVerifikasi->reservasi_id : $data->id);
-                if ($updateStReserv) {
-                    if ($verifikasiBarcode = true) {
-                        $updateStReserv->status_barcode = 'dipanggil';
-                    } else {
-                        $updateStReserv->status = 'dipanggil';
-                    }
-                    $updateStReserv->updated_at = $today;
-                    $updateStReserv->save();
-                }
-
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Panggilan Antrian berhasil disimpan dan status reservasi diperbarui!',
-                    'nik' => $verifikasiBarcode = true ? $cekStatus->nik : $data->nik,
-                    'as' => '@Kurisu'
-                ], 201);
-            } else {
-                // Jika gagal menyimpan
+            if (!$PA->save()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Gagal menyimpan panggilan antrian.',
                     'as' => '@Kurisu'
                 ], 500);
             }
+
+            // Update status di tabel reservasi
+            $reservasiToUpdate = Reservasi::find(
+                $res_id
+            );
+
+            if ($reservasiToUpdate) {
+                if ($request->jenis_antrian == 'VB') {
+                    $reservasiToUpdate->status_barcode = 'dipanggil';
+                } else {
+                    $reservasiToUpdate->status = 'dipanggil';
+                }
+                $reservasiToUpdate->updated_at = $today;
+                $reservasiToUpdate->save();
+            }
+
+            // Response sukses
+            return response()->json([
+                'status' => true,
+                'message' => 'Panggilan Antrian berhasil disimpan dan status reservasi diperbarui!',
+                'nik' => $nik,
+                'as' => '@Kurisu'
+            ], 201);
+
+        } catch (\Exception $e) {
+            // Penanganan error tak terduga
+            Log::error('Gagal panggil antrian: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan pada server.',
+                'error' => $e->getMessage(), // untuk development, hapus di production
+                'as' => '@Kurisu'
+            ], 500);
         }
     }
 
@@ -355,9 +355,9 @@ class ReservasiController extends Controller
             $DSJ = Reservasi::where('statusenabled', true)
                 ->where('nik', $request->nik)
                 // ->select(DB::raw("CONCAT(REPLACE(TRIM(kebutuhan), ' ', ''), '-', no_urut) AS noantri"))
-                ->select('kebutuhan','no_urut','lokasi','tanggal_reservasi','id','nama_lengkap','sim','jenis_perpanjangan','alamat',
+                ->select('kebutuhan','no_urut','lokasi','tanggal_reservasi','id','nama_lengkap','alamat',
                 DB::raw("TRIM(status) AS status,TRIM(status_barcode) AS status_barcode,TRIM(status_bayar) AS status_bayar,
-                TRIM(status_foto) AS status_foto,TRIM(status_sim) AS status_sim"))
+                TRIM(status_foto) AS status_foto,TRIM(status_sim) AS status_sim,TRIM(sim) AS sim,TRIM(jenis_perpanjangan) AS jenis_perpanjangan"))
                 ->first();
 
             $ASIPP = PanggilAntrian::from('panggil_antrian_t as pa')
@@ -422,6 +422,26 @@ class ReservasiController extends Controller
                 $estimasiLayanBB = max(0, ($DSJ->no_urut - $jmlASIBB)) * 5;
             }
 
+            $diBayar = "";
+            if ($DSJ->jenis_perpanjangan == 'Perpanjang') {
+               if ($DSJ->sim == 'SIM A' || $DSJ->sim == 'SIM B1' || $DSJ->sim == 'SIM B2' ) {
+                    $diBayar = 80000+50000+75000+40000;
+                } else if ($DSJ->sim == 'SIM C') {
+                    $diBayar = 75000+50000+75000+40000;
+                } else {
+                    $diBayar = 30000+50000+75000+40000;
+                }
+            } else {
+                if ($DSJ->sim == 'SIM A' || $DSJ->sim == 'SIM B1' || $DSJ->sim == 'SIM B2' ) {
+                    $diBayar = 120000+50000+75000+40000;
+                } else if ($DSJ->sim == 'SIM C') {
+                    $diBayar = 100000+50000+75000+40000;
+                } else {
+                    $diBayar = 50000+50000+75000+40000;
+                }
+            }
+            
+
             return response()->json([
                 'nomoranda' => $DSJ->kebutuhan . '-' . $DSJ->no_urut,
                 'lokasi' => $DSJ->lokasi,
@@ -437,6 +457,7 @@ class ReservasiController extends Controller
                     'foto' => $DSJ->status_foto,
                     'pengambilan' => $DSJ->status_sim
                 ],
+                'hargasim' => $diBayar,
             ]);
 
         } catch (\Exception $e) {
@@ -492,6 +513,114 @@ class ReservasiController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Gagal menyimpan Input Kesehatan.',
+                'as' => '@Kurisu'
+            ], 500);
+        }
+    }
+
+    public function saveVerifikasi(Request $request)
+    {
+        try {
+            $today = Carbon::now();
+            // Buat pemanggilan antrian
+            $updateSt = Reservasi::where('id', $request->reserv_id)->first();
+            $updateSt->status_barcode = 'Sudah';
+            $updateSt->status_bayar = 'Belum';
+            $updateSt->updated_at = $today;
+            $updateSt->save();
+
+            // Response sukses
+            return response()->json([
+                'status' => true,
+                'message' => 'Verifikasi Barcode berhasil disimpan!',
+                'as' => '@Kurisu'
+            ], 201);
+
+        } catch (\Exception $e) {
+            // Penanganan error tak terduga
+            Log::error('Gagal Verifikasi Barcode: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan pada server.',
+                'error' => $e->getMessage(), // untuk development, hapus di production
+                'as' => '@Kurisu'
+            ], 500);
+        }
+    }
+
+    public function savePembayaran(Request $request)
+    {
+        try {
+            DB::beginTransaction(); // Mulai transaksi
+
+            $newid = Pembayaran::max('id') + 1;
+            $today = Carbon::now();
+            // $nominal = str_replace(['Rp', '.', ' '], '', $request->nominal);
+            // $dibayar = str_replace(['Rp', '.', ' '], '', $request->dibayar);
+            // $kembali = str_replace(['Rp', '.', ' '], '', $request->kembali);
+
+            // Simpan pembayaran
+            $IK = new Pembayaran();
+            $IK->id = $newid;
+            $IK->nominal = $request->nominal;
+            $IK->totaldibayar = $request->dibayar;
+            $IK->kembali = $request->kembali;
+            $IK->created_at = $today;
+            $IK->updated_at = null;
+            $IK->statusenabled = true;
+            $IK->reservasi_id = $request->reserv_id;
+
+            $saved = $IK->save();
+
+            if (!$saved) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal menyimpan data pembayaran.',
+                    'as' => '@Kurisu'
+                ], 500);
+            }
+
+            // Update status reservasi
+            $updateStReserv = Reservasi::find($request->reserv_id);
+            if (!$updateStReserv) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data reservasi tidak ditemukan.',
+                    'as' => '@Kurisu'
+                ], 404);
+            }
+            $updateStReserv->status_bayar = 'Sudah';
+            $updateStReserv->status_foto = 'Belum';
+            $updateStReserv->updated_at = $today;
+
+            if (!$updateStReserv->save()) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal memperbarui status reservasi.',
+                    'as' => '@Kurisu'
+                ], 500);
+            }
+
+            DB::commit(); // Simpan semua perubahan
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Pembayaran dan update reservasi berhasil!',
+                'as' => '@Kurisu'
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack(); // Batalkan semua perubahan jika ada error
+            Log::error('Gagal Pembayaran: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan pada server.',
+                'error' => $e->getMessage(),
                 'as' => '@Kurisu'
             ], 500);
         }

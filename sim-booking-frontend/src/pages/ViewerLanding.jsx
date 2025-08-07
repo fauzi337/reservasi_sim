@@ -23,21 +23,24 @@ function ViewerLanding(params) {
             <div className="container">
             <h1 className="text-3xl font-bold mb-6">Selamat Datang Petugas di Sistem Manajemen Reservasi SIM</h1>
 
-            {/* Tombol-tombol */}
-            <div className="flex flex-col md:flex-row justify-center gap-4">
-                <Link to="/reservasi" className="btn btn-info">
-                Buat Reservasi
-                </Link>
-                <Link to="/resume-antrian" className="btn btn-info">
-                Lihat Resume Antrian
-                </Link>
-                <Link to="/panggil-antrian" className="btn btn-info">
-                Panggil Antrian
-                </Link>
-                <Link to="/input-kesehatan" className="btn btn-info">
-                Input Kesehatan
-                </Link>
-            </div>
+              {/* Tombol-tombol */}
+              <div className="flex flex-col md:flex-row justify-center gap-4 mt-4 mb-4">
+                  <Link to="/reservasi" className="btn btn-info">
+                  Buat Reservasi
+                  </Link>
+                  <Link to="/resume-antrian" className="btn btn-info">
+                  Lihat Resume Antrian
+                  </Link>
+                  <Link to="/panggil-antrian" className="btn btn-info">
+                  Panggil Antrian
+                  </Link>
+                  <Link to="/input-kesehatan" className="btn btn-info">
+                  Input Kesehatan
+                  </Link>
+                  <Link to="/input-pembayaran" className="btn btn-info">
+                  Input Pembayaran
+                  </Link>
+              </div>
             </div>
         </div>
     </div>

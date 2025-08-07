@@ -53,6 +53,8 @@ export const labelBiasa = "block mb-1 font-medium text-gray-600 block mb-1";
 
 //textbox disabled
 export const textDisabled = "p-2 bg-gray-100 rounded-md font-medium";
+export const textDisabledRed = "p-2 bg-red-100 rounded-md font-medium";
+export const textDisabledGreen = "p-2 bg-green-100 rounded-md font-medium";
 
 //textbox varian
 export const boxColorLine = "w-full p-2 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400";

@@ -27,6 +27,8 @@ Route::post('/reservasi', [ReservasiController::class, 'store']);
 Route::post('/panggil-antrian', [ReservasiController::class, 'panggilAntrianKesehatan']);
 Route::post('/getAntrian', [ReservasiController::class, 'getDataByNik']);
 Route::post('/save-kesehatan', [ReservasiController::class, 'saveKesehatan']);
+Route::post('/save-verifikasi', [ReservasiController::class, 'saveVerifikasi']);
+Route::post('/save-pembayaran', [ReservasiController::class, 'savePembayaran']);
 
 Route::get('/status-antrian', [ReservasiController::class, 'getStatusAntrian']);
 Route::get('/get-status-journey', [ReservasiController::class, 'getStatusJourney']);
