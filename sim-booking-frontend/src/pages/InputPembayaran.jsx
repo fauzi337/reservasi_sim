@@ -3,9 +3,10 @@ import {
   grid_2,btnManualPulse,btnPulse,grid_1,textDisabledRed,textDisabledGreen
 } from "../styles/formClasses";
 import { useEffect, useState } from "react";
-import axios from 'axios';
+// import axios from 'axios';
 import { ToastTypes } from '../constants/toastTypes';
 import { useLocation } from 'react-router-dom';
+import axios from '../api/axios';
 
 export default function InputPembayaran({ showToast }) {
   const [today, setToday] = useState("");
@@ -93,7 +94,7 @@ export default function InputPembayaran({ showToast }) {
 
   const cekNik = async () => {
     try {
-      const res = await axios.post('http://localhost:8000/api/getAntrian', {
+      const res = await axios.post('/getAntrian', {
         nik: formData.nik
       });
       const data = res.data;
@@ -109,7 +110,8 @@ export default function InputPembayaran({ showToast }) {
         kebutuhan: data.data.jenis_perpanjangan,
         dibayar: data.hargasim,
         verifikasist: data.status.verifikasi,
-        pembayaranst: data.status.pembayaran
+        pembayaranst: data.status.pembayaran,
+        sehatst: data.status.kesehatan
       });
 
       showToast("Ambil Data Berhasil !", ToastTypes.sukses);
@@ -138,8 +140,8 @@ export default function InputPembayaran({ showToast }) {
       kembali: unformatRupiah(pembayaranData.kembali),
     }
 
-    if (resumeData.verifikasist != 'Sudah') {
-      showToast('Silahkan Verifikasi Barcode Terlebih Dahulu !', ToastTypes.warning);
+    if (resumeData.sehatst != 'Sudah') {
+      showToast('Silahkan Tes Kesehatan Terlebih Dahulu !', ToastTypes.warning);
       return;
     }
 
@@ -152,8 +154,12 @@ export default function InputPembayaran({ showToast }) {
         showToast('Nominal Tidak boleh 0 ! ', ToastTypes.warning);
         return;
       }
-      try {
-        const response = await axios.post('http://localhost:8000/api/save-pembayaran', payload);
+      if (resumeData.verifikasist != 'Sudah') {
+        showToast('Silahkan Verifikasi Barcode Terlebih Dahulu !', ToastTypes.warning);
+        return;
+      }
+        try {
+        const response = await axios.post('/save-pembayaran', payload);
         showToast('Input Pembayaran Berhasil ', ToastTypes.sukses);
         window.location.reload();
       } catch (error) {
@@ -161,7 +167,7 @@ export default function InputPembayaran({ showToast }) {
       }
     } else {
       try {
-        const response = await axios.post('http://localhost:8000/api/save-verifikasi', payload);
+        const response = await axios.post('/save-verifikasi', payload);
         showToast('Input verifikasi Berhasil ', ToastTypes.sukses);
         window.location.reload();
       } catch (error) {

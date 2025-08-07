@@ -3,9 +3,10 @@ import {
   grid_9,grid_10,grid_11,grid_12,
 } from "../styles/formClasses"; // path menyesuaikan dengan struktur proyekmu
 import { useEffect, useState } from "react";
-import axios from 'axios';
+// import axios from 'axios';
 import { ToastTypes } from '../constants/toastTypes';
 import { useNavigate } from 'react-router-dom';
+import axios from '../api/axios';
 
 export default function ReservasiPage({showToast}) {
   const navigate = useNavigate(); // letakkan di atas
@@ -52,7 +53,7 @@ export default function ReservasiPage({showToast}) {
     e.preventDefault(); // cegah reload
 
     try {
-    const res = await axios.post('http://localhost:8000/api/reservasi', formData);
+    const res = await axios.post('/reservasi', formData);
     showToast("Reservasi berhasil!", ToastTypes.sukses);  // success
     navigate("/resume-antrian", {
       // state: {

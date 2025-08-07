@@ -2,9 +2,10 @@ import {
   inputClass, labelClass, grid_head, grid_4
 } from "../styles/formClasses";
 import { useEffect, useState } from "react";
-import axios from 'axios';
+// import axios from 'axios';
 import { ToastTypes } from '../constants/toastTypes';
 import { useLocation } from 'react-router-dom';
+import axios from '../api/axios';
 
 export default function ResumeAntrian({ showToast }) {
   const [today, setToday] = useState("");
@@ -97,7 +98,7 @@ export default function ResumeAntrian({ showToast }) {
 
   const handleSubmit = async () => {
     try {
-      const res = await axios.post('http://localhost:8000/api/getAntrian', {
+      const res = await axios.post('/getAntrian', {
         nik: formData.nik
       });
       const data = res.data;
@@ -129,7 +130,7 @@ export default function ResumeAntrian({ showToast }) {
         showToast(msg, ToastTypes.danger);
       } else {
         const errorMsg = err.response?.data?.message || err.message || 'Terjadi kesalahan!';
-        showToast(errorMsg, ToastTypes.danger);
+        showToast('Nik: ' + formData.nik + ' Tidak Ada !', ToastTypes.danger);
       }
     }
   };

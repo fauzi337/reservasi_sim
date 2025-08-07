@@ -2,9 +2,10 @@ import {
   inputClass, labelClass, grid_6, grid_12,grid_4,grid_head,itemPosition
 } from "../styles/formClasses";
 import { useEffect, useState } from "react";
-import axios from 'axios';
+// import axios from 'axios';
 import { ToastTypes } from '../constants/toastTypes';
 import { useLocation } from 'react-router-dom';
+import axios from '../api/axios';
 
 function PanggilAntrianPage({ showToast }) {
   const [nomorAntrian, setNomorAntrian] = useState(null);
@@ -14,7 +15,7 @@ function PanggilAntrianPage({ showToast }) {
   const [lokasi, setLokasi] = useState(localStorage.getItem('lokasi') || '');
   const [showFullForm, setShowFullForm] = useState(localStorage.getItem('showFullForm') === 'true');
 
-  const jenisAntrianList = ['PP', 'BB','VB'];
+  const jenisAntrianList = ['PP', 'BB','VB','FT'];
   const loketList = ['Loket 1', 'Loket 2', 'Loket 3'];
   const lokasiList = ['Polres A', 'Polres B', 'Polres C'];
 
@@ -22,6 +23,7 @@ function PanggilAntrianPage({ showToast }) {
       PP: { belum: 0, sudah: 0 },
       BB: { belum: 0, sudah: 0 },
       VB: { belum: 0, sudah: 0 },
+      FT: { belum: 0, sudah: 0 },
   });
   const [dataPanggil, setDataPanggil] = useState({});
 
@@ -29,7 +31,7 @@ function PanggilAntrianPage({ showToast }) {
     const fetchAntrian = async () => {
       if (!lokasi) return;
       try {
-        const res = await axios.get(`http://localhost:8000/api/status-antrian?lokasi=${lokasi}`);
+        const res = await axios.get(`/status-antrian?lokasi=${lokasi}`);
         setAntrianData(res.data);
         console.log("Antrian berdasarkan lokasi:", res.data);
       } catch (err) {
@@ -94,7 +96,7 @@ function PanggilAntrianPage({ showToast }) {
 
       // ✅ POST ke Laravel API
       try {
-        const response = await axios.post('http://localhost:8000/api/panggil-antrian', {
+        const response = await axios.post('/panggil-antrian', {
           jenis_antrian: jenis,
           nomor: nextNumber,
           loket: loket,

@@ -293,6 +293,20 @@ class ReservasiController extends Controller
             ->where('rev.lokasi', $request->lokasi)
             ->count();
 
+        $ftBelum = Pembayaran::from('pembayaran_t as pb')
+            ->join('reservasis as rev', 'rev.id','=','pb.reservasi_id')
+            ->whereDate('pb.created_at', $todayDate)
+            ->where('rev.status_foto', 'Belum')
+            ->count();
+
+        $ftSudah = PanggilAntrian::from('panggil_antrian_t as pa')
+            ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+            ->where('pa.kdkebutuhan', 'FT')
+            ->whereDate('pa.created_at', $today)
+            ->where('pa.status', 'dipanggil')
+            ->where('rev.lokasi', $request->lokasi)
+            ->count();
+
         $dataReservasi = Reservasi::where('statusenabled', true)
             ->whereDate('tanggal_reservasi', $todayDate)
             ->get();
@@ -301,6 +315,7 @@ class ReservasiController extends Controller
             'PP' => ['belum' => $ppBelum, 'sudah' => $ppSudah],
             'BB' => ['belum' => $bbBelum, 'sudah' => $bbSudah],
             'VB' => ['belum' => $vbBelum, 'sudah' => $vbSudah],
+            'FT' => ['belum' => $ftBelum, 'sudah' => $ftSudah],
         ]);
     }
 
