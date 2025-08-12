@@ -171,11 +171,34 @@ class ReservasiController extends Controller
                 $DK = Kesehatan::from('kesehatan_t as ks')
                     ->join('reservasis as rev','rev.id','=','ks.reservasi_id')
                     ->whereDate('ks.created_at', $todayDate)
+                    ->where('rev.lokasi', $request->lokasi)
                     ->select('rev.id','rev.nik')
                     ->first();
                 $nik = $DK->nik;
                 $res_id = $DK->id;
                                 
+            } else if ($request->jenis_antrian == 'FT') {
+                $DB = Pembayaran::from('pembayaran_t as pb')
+                    ->join('reservasis as rev','rev.id','=','pb.reservasi_id')
+                    ->whereDate('pb.created_at', $todayDate)
+                    ->where('rev.lokasi', $request->lokasi)
+                    ->where('rev.status_foto', 'Belum')
+                    ->orderby('rev.no_urut', 'asc')
+                    ->select('rev.id','rev.nik')
+                    ->first();
+                $nik = $DB->nik;
+                $res_id = $DB->id;
+
+            } else if ($request->jenis_antrian == 'AS') {
+                $DF = Pembayaran::from('pembayaran_t as pb')
+                    ->join('reservasis as rev','rev.id','=','pb.reservasi_id')
+                    ->whereDate('pb.created_at', $todayDate)
+                    ->where('rev.lokasi', $request->lokasi)
+                    ->select('rev.id','rev.nik')
+                    ->first();
+                $nik = $DF->nik;
+                $res_id = $DF->id;
+
             } else {
                 // Coba cari data reservasi utama
                 $data = Reservasi::where('kebutuhan', $request->jenis_antrian)
@@ -217,6 +240,10 @@ class ReservasiController extends Controller
             if ($reservasiToUpdate) {
                 if ($request->jenis_antrian == 'VB') {
                     $reservasiToUpdate->status_barcode = 'dipanggil';
+                } else if ($request->jenis_antrian == 'FT') {
+                    $reservasiToUpdate->status_foto = 'dipanggil';
+                } else if ($request->jenis_antrian == 'AS') {
+                    $reservasiToUpdate->status_sim = 'dipanggil';
                 } else {
                     $reservasiToUpdate->status = 'dipanggil';
                 }
@@ -283,6 +310,7 @@ class ReservasiController extends Controller
             ->join('reservasis as rev', 'rev.id','=','ks.reservasi_id')
             ->whereDate('ks.created_at', $todayDate)
             ->where('rev.status_barcode', 'Belum')
+            ->where('rev.lokasi', $request->lokasi)
             ->count();
 
         $vbSudah = PanggilAntrian::from('panggil_antrian_t as pa')
@@ -297,11 +325,27 @@ class ReservasiController extends Controller
             ->join('reservasis as rev', 'rev.id','=','pb.reservasi_id')
             ->whereDate('pb.created_at', $todayDate)
             ->where('rev.status_foto', 'Belum')
+            ->where('rev.lokasi', $request->lokasi)
             ->count();
 
         $ftSudah = PanggilAntrian::from('panggil_antrian_t as pa')
             ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
             ->where('pa.kdkebutuhan', 'FT')
+            ->whereDate('pa.created_at', $today)
+            ->where('pa.status', 'dipanggil')
+            ->where('rev.lokasi', $request->lokasi)
+            ->count();
+
+        $asBelum = Pembayaran::from('pembayaran_t as pb')
+            ->join('reservasis as rev', 'rev.id','=','pb.reservasi_id')
+            ->whereDate('pb.created_at', $todayDate)
+            ->where('rev.status_sim', 'Belum')
+            ->where('rev.lokasi', $request->lokasi)
+            ->count();
+
+        $asSudah = PanggilAntrian::from('panggil_antrian_t as pa')
+            ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+            ->where('pa.kdkebutuhan', 'AS')
             ->whereDate('pa.created_at', $today)
             ->where('pa.status', 'dipanggil')
             ->where('rev.lokasi', $request->lokasi)
@@ -316,6 +360,7 @@ class ReservasiController extends Controller
             'BB' => ['belum' => $bbBelum, 'sudah' => $bbSudah],
             'VB' => ['belum' => $vbBelum, 'sudah' => $vbSudah],
             'FT' => ['belum' => $ftBelum, 'sudah' => $ftSudah],
+            'AS' => ['belum' => $asBelum, 'sudah' => $asSudah],
         ]);
     }
 
@@ -636,6 +681,67 @@ class ReservasiController extends Controller
                 'status' => false,
                 'message' => 'Terjadi kesalahan pada server.',
                 'error' => $e->getMessage(),
+                'as' => '@Kurisu'
+            ], 500);
+        }
+    }
+
+    public function saveFoto(Request $request)
+    {
+        try {
+            $today = Carbon::now();
+            // Buat pemanggilan antrian
+            $updateSt = Reservasi::where('id', $request->reserv_id)->first();
+            $updateSt->status_foto = 'Sudah';
+            $updateSt->status_sim = 'Belum';
+            $updateSt->updated_at = $today;
+            $updateSt->save();
+
+            // Response sukses
+            return response()->json([
+                'status' => true,
+                'message' => 'Foto berhasil disimpan!',
+                'as' => '@Kurisu'
+            ], 201);
+
+        } catch (\Exception $e) {
+            // Penanganan error tak terduga
+            Log::error('Gagal Foto: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan pada server.',
+                'error' => $e->getMessage(), // untuk development, hapus di production
+                'as' => '@Kurisu'
+            ], 500);
+        }
+    }
+
+    public function saveAmbilSim(Request $request)
+    {
+        try {
+            $today = Carbon::now();
+            // Buat pemanggilan antrian
+            $updateSt = Reservasi::where('id', $request->reserv_id)->first();
+            $updateSt->status_sim = 'Sudah';
+            $updateSt->updated_at = $today;
+            $updateSt->save();
+
+            // Response sukses
+            return response()->json([
+                'status' => true,
+                'message' => 'Ambil SIM berhasil disimpan!',
+                'as' => '@Kurisu'
+            ], 201);
+
+        } catch (\Exception $e) {
+            // Penanganan error tak terduga
+            Log::error('Gagal Ambil SIM: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan pada server.',
+                'error' => $e->getMessage(), // untuk development, hapus di production
                 'as' => '@Kurisu'
             ], 500);
         }

@@ -1,6 +1,6 @@
 import {
   itemPosition, grid_3, grid_head_nonform, grid_4,border_head,border_detail,labelBiasa,textDisabled,boxColorLine,section_head,section_font,
-  grid_2,btnManualPulse,btnPulse,grid_1,textDisabledRed,textDisabledGreen
+  grid_2,btnManualPulse,btnPulse,grid_1,textDisabledRed,textDisabledGreen,textDisabledOrange
 } from "../styles/formClasses";
 import { useEffect, useState } from "react";
 // import axios from 'axios';
@@ -111,7 +111,9 @@ export default function InputPembayaran({ showToast }) {
         dibayar: data.hargasim,
         verifikasist: data.status.verifikasi,
         pembayaranst: data.status.pembayaran,
-        sehatst: data.status.kesehatan
+        sehatst: data.status.kesehatan,
+        fotost: data.status.foto,
+        simst: data.status.pengambilan
       });
 
       showToast("Ambil Data Berhasil !", ToastTypes.sukses);
@@ -146,26 +148,67 @@ export default function InputPembayaran({ showToast }) {
     }
 
     if (formData.pelayanan === 'pembayaran') {
-      if (pembayaranData.kembali == 0) {
-        showToast('Kembalian Tidak boleh 0 ! ', ToastTypes.warning);
-        return;
-      }
+      // if (pembayaranData.kembali == 0) {
+      //   showToast('Kembalian Tidak boleh 0 ! ', ToastTypes.warning);
+      //   return;
+      // }
       if (pembayaranData.nominal <= 0) {
         showToast('Nominal Tidak boleh 0 ! ', ToastTypes.warning);
+        return;
+      }
+      if (payload.nominal < payload.dibayar) {
+        showToast('Nominal Tidak boleh Kurang Dari Total Dibayar ! ', ToastTypes.warning);
         return;
       }
       if (resumeData.verifikasist != 'Sudah') {
         showToast('Silahkan Verifikasi Barcode Terlebih Dahulu !', ToastTypes.warning);
         return;
       }
-        try {
+      if (resumeData.pembayaranst == 'Sudah') {
+        showToast('Pelanggan Sudah Bayar !', ToastTypes.warning);
+        return;
+      }
+      try {
         const response = await axios.post('/save-pembayaran', payload);
         showToast('Input Pembayaran Berhasil ', ToastTypes.sukses);
         window.location.reload();
       } catch (error) {
         showToast('Pembayaran Gagal !', ToastTypes.error);
       }
+    } else if (formData.pelayanan === 'foto') {    
+      if (resumeData.fotost == 'Belum') {
+        showToast('Silahkan Menunggu Antrian Foto Terlebih Dahulu !', ToastTypes.warning);
+        return;
+      }
+      if (resumeData.pembayaranst == 'Belum') {
+        showToast('Silahkan Melakukan Pembayaran Terlebih Dahulu !', ToastTypes.warning);
+        return;
+      }
+      try {
+        const response = await axios.post('/save-foto', payload);
+        showToast('Input Foto Berhasil ', ToastTypes.sukses);
+        window.location.reload();
+      } catch (error) {
+        showToast('Foto Gagal !', ToastTypes.error);
+      }
+    } else if (formData.pelayanan === 'ambil') {
+      if (resumeData.fotost != 'Sudah') {
+        showToast('Silahkan Menunggu Antrian Pengambilan SIM Terlebih Dahulu !', ToastTypes.warning);
+        return;
+      }
+      try {
+        const response = await axios.post('/save-ambil-sim', payload);
+        showToast('Input Ambil SIM Berhasil ', ToastTypes.sukses);
+        window.location.reload();
+      } catch (error) {
+        showToast('Ambil SIM Gagal !', ToastTypes.error);
+      }
     } else {
+      if (resumeData.verifikasist == 'Sudah') {
+        showToast('Pelanggan Sudah Verifikasi !', ToastTypes.warning);
+        return;
+      }
+
       try {
         const response = await axios.post('/save-verifikasi', payload);
         showToast('Input verifikasi Berhasil ', ToastTypes.sukses);
@@ -183,7 +226,9 @@ export default function InputPembayaran({ showToast }) {
       <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl mx-auto">
         <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">
           {formData.pelayanan === 'pembayaran' ? 'Pelayanan Pembayaran' : 
-          formData.pelayanan === 'verifikasi' ? 'Pelayanan Verifikasi Barcode': ''}
+          formData.pelayanan === 'verifikasi' ? 'Pelayanan Verifikasi Barcode': 
+          formData.pelayanan === 'foto' ? 'Pelayanan Foto':
+          formData.pelayanan === 'ambil' ? 'Pelayanan Pengambilan SIM': ''}
         </h2>
 
         {/* Section Title */}
@@ -200,6 +245,8 @@ export default function InputPembayaran({ showToast }) {
                 <option value="">-- Pilih Pelayanan --</option>
                 <option value="verifikasi">Verifikasi Barcode</option>
                 <option value="pembayaran">Pembayaran</option>
+                <option value="foto">Foto</option>
+                <option value="ambil">Pengambilan SIM</option>
               </select>
             </div>
             {/* Input NIK */}
@@ -260,6 +307,34 @@ export default function InputPembayaran({ showToast }) {
               )}
             </div>
           )}
+          {resumeData.nomorAnda && formData.pelayanan === 'ambil' && (
+            <div className={`${grid_head_nonform} gap-4 mt-4`}>
+              <div className={grid_2}>
+                <label className={labelBiasa}>Kesehatan</label>
+                <div className={`${resumeData.sehatst === 'Sudah' ? textDisabledGreen : resumeData.sehatst === 'dipanggil' ? textDisabledOrange : textDisabledRed } `}>
+                  {resumeData.sehatst}
+                </div>
+              </div>
+              <div className={grid_3}>
+                <label className={labelBiasa}>Verifikasi Barcode</label>
+                <div className={`${resumeData.verifikasist === 'Sudah' ? textDisabledGreen : resumeData.verifikasist === 'dipanggil' ? textDisabledOrange : textDisabledRed } `}>
+                  {resumeData.verifikasist}
+                </div>
+              </div>
+              <div className={grid_2}>
+                <label className={labelBiasa}>Foto</label>
+                <div className={`${resumeData.fotost === 'Sudah' ? textDisabledGreen : resumeData.fotost === 'dipanggil' ? textDisabledOrange : textDisabledRed } `}>
+                  {resumeData.fotost}
+                </div>
+              </div>
+              <div className={grid_3}>
+                <label className={labelBiasa}>Pengambilan SIM</label>
+                <div className={`${resumeData.simst === 'Sudah' ? textDisabledGreen : resumeData.simst === 'dipanggil' ? textDisabledOrange : textDisabledRed } `}>
+                  {resumeData.simst}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Section Title 2 */}
@@ -291,9 +366,9 @@ export default function InputPembayaran({ showToast }) {
             </div>
           </>
          )}
-         {resumeData.nomorAnda && formData.pelayanan === 'verifikasi' &&(
+         {resumeData.nomorAnda && formData.pelayanan !== 'pembayaran' &&(
           <div className={itemPosition}>
-            <button className={`${btnManualPulse} ${formData.pelayanan === 'verifikasi' ? 'animate-pulse' : 'opacity-50 cursor-not-allowed'}`} onClick={saveData}>Simpan</button>
+            <button className={`${btnManualPulse} ${formData.pelayanan !== 'pembayaran' ? 'animate-pulse' : 'opacity-50 cursor-not-allowed'}`} onClick={saveData}>Simpan</button>
           </div>
          )}
          {resumeData.nomorAnda && formData.pelayanan === 'pembayaran' &&(

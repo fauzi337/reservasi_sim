@@ -15,31 +15,50 @@ function PanggilAntrianPage({ showToast }) {
   const [lokasi, setLokasi] = useState(localStorage.getItem('lokasi') || '');
   const [showFullForm, setShowFullForm] = useState(localStorage.getItem('showFullForm') === 'true');
 
-  const jenisAntrianList = ['PP', 'BB','VB','FT'];
+  const jenisAntrianList = ['PP', 'BB','VB','FT','AS'];
   const loketList = ['Loket 1', 'Loket 2', 'Loket 3'];
-  const lokasiList = ['Polres A', 'Polres B', 'Polres C'];
+  const lokasiList = ['--Silahkan Pilih Lokasi--','Polres A', 'Polres B', 'Polres C'];
 
   const [antrianData, setAntrianData] = useState({
       PP: { belum: 0, sudah: 0 },
       BB: { belum: 0, sudah: 0 },
       VB: { belum: 0, sudah: 0 },
       FT: { belum: 0, sudah: 0 },
+      AS: { belum: 0, sudah: 0 },
   });
   const [dataPanggil, setDataPanggil] = useState({});
 
   useEffect(() => {
-    const fetchAntrian = async () => {
-      if (!lokasi) return;
-      try {
-        const res = await axios.get(`/status-antrian?lokasi=${lokasi}`);
-        setAntrianData(res.data);
-        console.log("Antrian berdasarkan lokasi:", res.data);
-      } catch (err) {
-        console.error('Gagal mengambil data antrian:', err);
-      }
-    };
+    // Set default agar user pilih lokasi setiap buka halaman
+    localStorage.removeItem('lokasi');
+    localStorage.removeItem('showFullForm');
+    setShowFullForm(false);
+    setLokasi('');
+  }, []);
 
+
+  const fetchAntrian = async () => {
+    if (!lokasi) return;
+    try {
+      const res = await axios.get(`/status-antrian?lokasi=${lokasi}`);
+      setAntrianData(res.data);
+      console.log("Antrian berdasarkan lokasi:", res.data);
+    } catch (err) {
+      console.error('Gagal mengambil data antrian:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!lokasi) return;
+
+    // Ambil data pertama kali
     fetchAntrian();
+
+    // Refresh otomatis setiap 5 detik
+    const interval = setInterval(fetchAntrian, 5000);
+
+    // Bersihkan interval kalau user ganti lokasi atau keluar halaman
+    return () => clearInterval(interval);
   }, [lokasi]);
 
   const speak = (text) => {
@@ -127,6 +146,10 @@ function PanggilAntrianPage({ showToast }) {
   };
 
   const handleSearchLokasi = async () => {
+    // if (lokasiList === '-') {
+    //   showToast('Silahkan Pilih Lokasi Anda !', ToastTypes.warning);
+    //   return;
+    // }
     if (lokasi) {
       localStorage.setItem('lokasi', lokasi);
       localStorage.setItem('showFullForm', 'true');

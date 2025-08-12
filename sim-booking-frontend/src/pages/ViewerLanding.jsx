@@ -38,7 +38,7 @@ function ViewerLanding(params) {
                   Input Kesehatan
                   </Link>
                   <Link to="/input-pembayaran" className="btn btn-info">
-                  Input Pembayaran
+                  Input Pelayanan
                   </Link>
               </div>
             </div>
