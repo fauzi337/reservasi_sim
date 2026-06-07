@@ -1,8 +1,10 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-// import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import BookingForm from './components/BookingForm'; // perhatikan path ini
+import * as bootstrap from 'bootstrap';
+import './styles/global.css';
+
 import HomePage from './pages/HomePage';
 import ReservasiPage from './pages/ReservasiPage';
 import ResumeAntrian from './pages/ResumeAntrian';
@@ -10,12 +12,11 @@ import PanggilAntrian from './pages/PanggilAntrian';
 import ViewerLanding from './pages/ViewerLanding';
 import InputKesehatan from './pages/InputKesehatan';
 import InputPembayaran from './pages/InputPembayaran';
+import LoginPage from './pages/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import Toast from './components/Toast';
-import React, { useState, useEffect  } from 'react';
-import * as bootstrap from 'bootstrap';
-import './styles/global.css';
-window.bootstrap = bootstrap;
 
+window.bootstrap = bootstrap;
 
 function App() {
   const [toast, setToast] = useState({
@@ -25,7 +26,6 @@ function App() {
   });
 
   const showToast = (message, type = 'danger') => {
-    // console.log("🔥 showToast DIPANGGIL:", message, type);
     setToast({ show: true, message, type });
 
     setTimeout(() => {
@@ -35,19 +35,90 @@ function App() {
 
   useEffect(() => {
     setToast({ show: false, message: '', type: 'danger' });
+    
+    // Load saved theme
+    const theme = localStorage.getItem('theme') || 'light';
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, []);
 
   return (
     <>
       <Router>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/reservasi" element={<ReservasiPage showToast={showToast} />} />
-          <Route path="/resume-antrian" element={<ResumeAntrian showToast={showToast} />} />
-          <Route path="/panggil-antrian" element={<PanggilAntrian showToast={showToast} />} />
-          <Route path="/viewer-landing" element={<ViewerLanding showToast={showToast} />} />
-          <Route path="/input-kesehatan" element={<InputKesehatan showToast={showToast} />} />
-          <Route path="/input-pembayaran" element={<InputPembayaran showToast={showToast} />} />
+          {/* Public Route */}
+          <Route path="/login" element={<LoginPage showToast={showToast} />} />
+
+          {/* Protected Customer Routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/reservasi"
+            element={
+              <ProtectedRoute allowedRoles={['customer', 'admin']}>
+                <ReservasiPage showToast={showToast} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/resume-antrian"
+            element={
+              <ProtectedRoute allowedRoles={['customer', 'admin']}>
+                <ResumeAntrian showToast={showToast} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Admin/Staff Routes */}
+          <Route
+            path="/viewer-landing"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ViewerLanding showToast={showToast} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/panggil-antrian"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <PanggilAntrian showToast={showToast} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/input-kesehatan"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <InputKesehatan showToast={showToast} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/input-pembayaran"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <InputPembayaran showToast={showToast} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback routing */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
 

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { ToastTypes } from '../constants/toastTypes';
 import { useLocation } from 'react-router-dom';
 import axios from '../api/axios';
+import Navbar from '../components/Navbar';
 
 export default function InputPembayaran({ showToast }) {
   const [today, setToday] = useState("");
@@ -222,8 +223,10 @@ export default function InputPembayaran({ showToast }) {
   const isFormLengkap = Object.values(pembayaranData).every(val => val !== null && val !== '' && !isNaN(val));
 
   return (
-    <div className={border_head}>
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl mx-auto">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+      <Navbar showToast={showToast} />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border border-gray-100 dark:border-slate-800 rounded-xl shadow-lg p-6 w-full max-w-4xl mx-auto transition-all duration-300">
         <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">
           {formData.pelayanan === 'pembayaran' ? 'Pelayanan Pembayaran' : 
           formData.pelayanan === 'verifikasi' ? 'Pelayanan Verifikasi Barcode': 
@@ -376,6 +379,7 @@ export default function InputPembayaran({ showToast }) {
             <button className={`${btnManualPulse} ${isFormLengkap ? 'animate-pulse' : 'opacity-50 cursor-not-allowed'}`} onClick={saveData}>Simpan</button>
           </div>
          )}
+        </div>
       </div>
     </div>
   );

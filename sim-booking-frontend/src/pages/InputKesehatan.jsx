@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { ToastTypes } from '../constants/toastTypes';
 import { useLocation } from 'react-router-dom';
 import axios from '../api/axios';
+import Navbar from '../components/Navbar';
 
 export default function InputKesehatan({ showToast }) {
   const [today, setToday] = useState("");
@@ -88,12 +89,19 @@ export default function InputKesehatan({ showToast }) {
         kebutuhan: data.data.jenis_perpanjangan,
       });
 
+      setKesehatanData((prev) => ({
+        ...prev,
+        tb: data.data.tinggi_badan,
+      }));
+
       showToast("Ambil Data Berhasil !", ToastTypes.sukses);
     } catch (err) {
       if (err.response?.status === 422) {
         const validationErrors = err.response.data.errors;
         const msg = validationErrors ? Object.values(validationErrors).flat().join(', ') : 'Validasi gagal!';
         showToast(msg, ToastTypes.danger);
+      } else if (err.response?.status === 401){
+        showToast(err.response?.data?.message, ToastTypes.warning);
       } else {
         const errorMsg = err.response?.data?.message || err.message || 'Terjadi kesalahan!';
         showToast('Nik: ' + formData.nik + ' Tidak Ada !', ToastTypes.danger);
@@ -144,8 +152,10 @@ export default function InputKesehatan({ showToast }) {
   const isFormLengkap = Object.values(kesehatanData).every(val => val.trim() !== '');
 
   return (
-    <div className={border_head}>
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl mx-auto">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+      <Navbar showToast={showToast} />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border border-gray-100 dark:border-slate-800 rounded-xl shadow-lg p-6 w-full max-w-4xl mx-auto transition-all duration-300">
         <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">
           Pelayanan Kesehatan
         </h2>
@@ -268,6 +278,7 @@ export default function InputKesehatan({ showToast }) {
             </div>
           </>
          )}
+        </div>
       </div>
     </div>
   );

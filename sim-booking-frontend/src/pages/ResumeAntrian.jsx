@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ToastTypes } from '../constants/toastTypes';
 import { useLocation } from 'react-router-dom';
 import axios from '../api/axios';
+import Navbar from '../components/Navbar';
 
 export default function ResumeAntrian({ showToast }) {
   const [today, setToday] = useState("");
@@ -136,8 +137,10 @@ export default function ResumeAntrian({ showToast }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl">
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-slate-900 transition-colors duration-300">
+      <Navbar showToast={showToast} />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border border-gray-100 dark:border-slate-800 rounded-xl shadow-lg p-6 w-full max-w-4xl transition-all duration-300">
         <h2 className="text-2xl font-bold mb-1 text-center">Resume</h2>
         <p className="text-center text-lg text-gray-600 mb-6">PELAYANAN PUKUL 09.00</p>
 
@@ -210,6 +213,7 @@ export default function ResumeAntrian({ showToast }) {
 
         <div className="text-m text-red-300">
           <p><strong>*Note:</strong> ...</p>
+        </div>
         </div>
       </div>
     </div>

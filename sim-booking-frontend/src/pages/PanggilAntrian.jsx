@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ToastTypes } from '../constants/toastTypes';
 import { useLocation } from 'react-router-dom';
 import axios from '../api/axios';
+import Navbar from '../components/Navbar';
 
 function PanggilAntrianPage({ showToast }) {
   const [nomorAntrian, setNomorAntrian] = useState(null);
@@ -167,8 +168,10 @@ function PanggilAntrianPage({ showToast }) {
 
 
   return (
-    <div className="container mt-5">
-      <h2 className="mb-4">Panggil Antrian</h2>
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+      <Navbar showToast={showToast} />
+      <div className="container mt-5 flex-1 p-4">
+        <h2 className="mb-4 text-slate-800 dark:text-white font-bold">Panggil Antrian</h2>
 
       <div className={grid_head}>
         {/* LOKASI & SEARCH SAJA */}
@@ -253,6 +256,7 @@ function PanggilAntrianPage({ showToast }) {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

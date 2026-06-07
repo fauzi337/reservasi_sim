@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { ToastTypes } from '../constants/toastTypes';
 import { useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
+import Navbar from '../components/Navbar';
 
 export default function ReservasiPage({showToast}) {
   const navigate = useNavigate(); // letakkan di atas
@@ -71,12 +72,14 @@ export default function ReservasiPage({showToast}) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-3xl">
-        <h2 className="text-2xl font-bold mb-4 text-indigo-600">Formulir Reservasi SIM</h2>
-        <p className="text-gray-700 mb-6">
-          Silakan isi data Anda untuk memulai proses reservasi.
-        </p>
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-slate-900 transition-colors duration-300">
+      <Navbar showToast={showToast} />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-950 p-8 rounded-xl shadow-xl w-full max-w-3xl border border-gray-100 dark:border-slate-800 text-slate-800 dark:text-slate-100 transition-all duration-300">
+          <h2 className="text-2xl font-bold mb-4 text-indigo-600 dark:text-indigo-400">Formulir Reservasi SIM</h2>
+          <p className="text-gray-700 dark:text-slate-300 mb-6">
+            Silakan isi data Anda untuk memulai proses reservasi.
+          </p>
 
         <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white shadow-md rounded-xl max-w-3xl mx-auto">
           {/* <h2 className="text-2xl font-semibold">Form Reservasi SIM</h2> */}
@@ -316,6 +319,7 @@ export default function ReservasiPage({showToast}) {
           </button>
         </form>
       </div>
+    </div>
     </div>
   );
 }

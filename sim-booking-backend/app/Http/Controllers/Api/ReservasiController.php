@@ -398,6 +398,7 @@ class ReservasiController extends Controller
         $todayDate = date('Y-m-d');
         $estimasiLayanPP = '';
         $estimasiLayanBB = '';
+        $nomorAntrian = '';
         // \Log::info('Cek NIK dari frontend', [
         //     'nik' => $request->nik,
         //     'request_all' => $request->all(),
@@ -415,7 +416,7 @@ class ReservasiController extends Controller
             $DSJ = Reservasi::where('statusenabled', true)
                 ->where('nik', $request->nik)
                 // ->select(DB::raw("CONCAT(REPLACE(TRIM(kebutuhan), ' ', ''), '-', no_urut) AS noantri"))
-                ->select('kebutuhan','no_urut','lokasi','tanggal_reservasi','id','nama_lengkap','alamat',
+                ->select('kebutuhan','no_urut','lokasi','tanggal_reservasi','id','nama_lengkap','alamat','tinggi_badan',
                 DB::raw("TRIM(status) AS status,TRIM(status_barcode) AS status_barcode,TRIM(status_bayar) AS status_bayar,
                 TRIM(status_foto) AS status_foto,TRIM(status_sim) AS status_sim,TRIM(sim) AS sim,TRIM(jenis_perpanjangan) AS jenis_perpanjangan"))
                 ->first();
@@ -470,6 +471,12 @@ class ReservasiController extends Controller
                 ], 404);
             }
 
+            // if ($DSJ->tanggal_reservasi != $todayDate) {
+            //     return response()->json([
+            //         'message' => 'Customer tidak daftar hari ini ! : '.$DSJ->tanggal_reservasi,
+            //     ], 401);
+            // }
+
             if ($DSJ->no_urut == $jmlASIPP) {
                 $estimasiLayanPP = 0;
             } else {
@@ -500,10 +507,49 @@ class ReservasiController extends Controller
                     $diBayar = 50000+50000+75000+40000;
                 }
             }
+
+        //    // Hardcode daftar step
+        //     $steps = [
+        //         1 => 'Pemanggilan Cek Kesehatan',
+        //         2 => 'Pemanggilan Verifikasi Barcode',
+        //         3 => 'Pemanggilan Pembayaran',
+        //         4 => 'Pemanggilan Antrian Ambil Foto',
+        //         5 => 'Pemanggilan Antrian Ambil SIM',
+        //     ];
+
+        //      // Ambil status dari database
+        //     $statusPelayanan = \DB::table('reservasis')
+        //         ->where('nik', $DSJ->nik)
+        //         ->pluck('status', 'step') // hasilnya: [step => status]
+        //         ->toArray();
+
+        //     $stepAktif = null;
+
+        //     foreach ($steps as $stepNumber => $namaProses) {
+        //         // Ambil status dari query (default 'Belum' jika tidak ada)
+        //         $status = $statusPelayanan[$stepNumber] ?? 'Belum';
+
+        //         if (strtolower($status) !== 'sudah') {
+        //             $stepAktif = [
+        //                 'step' => $stepNumber,
+        //                 'nama_proses' => $namaProses,
+        //                 'status' => $status
+        //             ];
+        //             break;
+        //         }
+        //     }
+
+        //     if (!$stepAktif) {
+        //         return response()->json([
+        //             'message' => 'Semua tahapan sudah selesai',
+        //             'status' => 'selesai'
+        //         ]);
+        //     }
             
 
             return response()->json([
                 'nomoranda' => $DSJ->kebutuhan . '-' . $DSJ->no_urut,
+                // 'nomoranda' => $nomorAntrian,
                 'lokasi' => $DSJ->lokasi,
                 'saatiniPP' => $ASIPP ? $ASIPP->kdkebutuhan . '-' . $ASIPP->no_urut : null,
                 'saatiniBB' => $ASIBB ? $ASIBB->kdkebutuhan . '-' . $ASIBB->no_urut : null,
@@ -518,6 +564,7 @@ class ReservasiController extends Controller
                     'pengambilan' => $DSJ->status_sim
                 ],
                 'hargasim' => $diBayar,
+                // 'step' => $stepAktif,
             ]);
 
         } catch (\Exception $e) {
