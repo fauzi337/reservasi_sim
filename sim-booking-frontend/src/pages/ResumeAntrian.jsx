@@ -24,6 +24,10 @@ export default function ResumeAntrian({ showToast }) {
     nomorAnda: '',
     nomorSaatIniPP: '',
     nomorSaatIniBB: '',
+    nomorSaatIniVB: '',
+    nomorSaatIniFT: '',
+    nomorSaatIniAS: '',
+    kebutuhan: '',
     estimasi: 0,
     lokasi: 'Silahkan Masukan NIK Terlebih Dahulu !',
     status: {
@@ -107,11 +111,15 @@ export default function ResumeAntrian({ showToast }) {
       const status = res.data.status;
 
       setResumeData({
-        nomorAnda: getNomor, // atau sesuaikan struktur datanya
-        estimasi: data.data.kebutuhan == 'PP' ? data.estimasiLayanPP : data.estimasiLayanBB, // estimasi bisa dihitung dari posisi antrian x waktu rata-rata
+        nomorAnda: getNomor,
+        kebutuhan: data.data.kebutuhan,
+        estimasi: data.data.kebutuhan == 'PP' ? data.estimasiLayanPP : data.estimasiLayanBB,
         lokasi: data.lokasi,
         nomorSaatIniPP: data.saatiniPP,
         nomorSaatIniBB: data.saatiniBB,
+        nomorSaatIniVB: data.saatiniVB,
+        nomorSaatIniFT: data.saatiniFT,
+        nomorSaatIniAS: data.saatiniAS,
         status: {
           kesehatan: status.kesehatan == null ? 'Belum' : proper(status.kesehatan),
           verifikasi: status.verifikasi == null ? 'Belum': proper(status.verifikasi),
@@ -136,11 +144,68 @@ export default function ResumeAntrian({ showToast }) {
     }
   };
 
+  const getNomorSaatIni = () => {
+    const status = resumeData.status;
+    const prefix = resumeData.nomorAnda ? resumeData.nomorAnda.split('-')[0] : '';
+    
+    if (status.kesehatan === 'Belum' || status.kesehatan === 'Dipanggil') {
+      return prefix === 'BB' ? resumeData.nomorSaatIniBB : resumeData.nomorSaatIniPP;
+    }
+    if (status.verifikasi === 'Belum' || status.verifikasi === 'Dipanggil') {
+      return resumeData.nomorSaatIniVB;
+    }
+    if (status.foto === 'Belum' || status.foto === 'Dipanggil') {
+      return resumeData.nomorSaatIniFT;
+    }
+    if (status.pengambilan === 'Belum' || status.pengambilan === 'Dipanggil') {
+      return resumeData.nomorSaatIniAS;
+    }
+    return 'Selesai';
+  };
+
+  const getActiveStageLabel = () => {
+    const status = resumeData.status;
+    if (status.kesehatan === 'Belum' || status.kesehatan === 'Dipanggil') {
+      return "Cek Kesehatan";
+    }
+    if (status.verifikasi === 'Belum' || status.verifikasi === 'Dipanggil') {
+      return "Verifikasi Barcode";
+    }
+    if (status.foto === 'Belum' || status.foto === 'Dipanggil') {
+      return "Foto";
+    }
+    if (status.pengambilan === 'Belum' || status.pengambilan === 'Dipanggil') {
+      return "Ambil SIM";
+    }
+    return "Selesai";
+  };
+
+  const getNomorPanggilanAnda = () => {
+    if (!resumeData.nomorAnda) return '';
+    const parts = resumeData.nomorAnda.split('-');
+    const suffix = parts[1] || '';
+    
+    const status = resumeData.status;
+    if (status.kesehatan === 'Belum' || status.kesehatan === 'Dipanggil') {
+      return resumeData.nomorAnda;
+    }
+    if (status.verifikasi === 'Belum' || status.verifikasi === 'Dipanggil') {
+      return `VB-${suffix}`;
+    }
+    if (status.foto === 'Belum' || status.foto === 'Dipanggil') {
+      return `FT-${suffix}`;
+    }
+    if (status.pengambilan === 'Belum' || status.pengambilan === 'Dipanggil') {
+      return `AS-${suffix}`;
+    }
+    return 'Selesai';
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-slate-900 transition-colors duration-300">
       <Navbar showToast={showToast} />
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border border-gray-100 dark:border-slate-800 rounded-xl shadow-lg p-6 w-full max-w-4xl transition-all duration-300">
+        <div className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border border-gray-100 dark:border-slate-800 rounded-xl shadow-lg p-6 w-full max-w-4xl mx-auto transition-all duration-300">
         <h2 className="text-2xl font-bold mb-1 text-center">Resume</h2>
         <p className="text-center text-lg text-gray-600 mb-6">PELAYANAN PUKUL 09.00</p>
 
@@ -148,10 +213,15 @@ export default function ResumeAntrian({ showToast }) {
           <div className="bg-blue-50 p-4 rounded-md">
             <div className="font-semibold">Nomor Antrian Anda</div>
             <div className="text-xl font-bold text-blue-700">{resumeData.nomorAnda || "Belum tersedia"}</div>
+            {resumeData.nomorAnda && getNomorPanggilanAnda() !== 'Selesai' && getNomorPanggilanAnda() !== resumeData.nomorAnda && (
+              <span className="text-xs text-blue-600 block mt-1">
+                Kode Panggilan Saat Ini: <strong>{getNomorPanggilanAnda()}</strong>
+              </span>
+            )}
           </div>
           <div className="bg-yellow-50 p-4 rounded-md">
-            <div className="font-semibold">Nomor Antrian Saat Ini</div>
-            <div className={`text-xl font-bold ${resumeData.nomorSaatIniPP == null ? 'text-yellow-700' : 'blinking text-yellow-700'}`}>{resumeData.nomorSaatIniPP || "Belum tersedia"} / {resumeData.nomorSaatIniBB || "Belum tersedia"}</div>
+            <div className="font-semibold">Nomor Antrian Saat Ini ({getActiveStageLabel()})</div>
+            <div className={`text-xl font-bold ${getNomorSaatIni() === 'Selesai' ? 'text-green-700' : 'blinking text-yellow-700'}`}>{getNomorSaatIni() || "Belum tersedia"}</div>
           </div>
         </div>
 

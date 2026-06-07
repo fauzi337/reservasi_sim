@@ -168,34 +168,53 @@ class ReservasiController extends Controller
             $res_id = '';
 
             if ($request->jenis_antrian == 'VB') {
-                $DK = Kesehatan::from('kesehatan_t as ks')
-                    ->join('reservasis as rev','rev.id','=','ks.reservasi_id')
-                    ->whereDate('ks.created_at', $todayDate)
-                    ->where('rev.lokasi', $request->lokasi)
-                    ->select('rev.id','rev.nik')
+                $DK = Reservasi::whereDate('tanggal_reservasi', $todayDate)
+                    ->where('lokasi', $request->lokasi)
+                    ->whereIn('status', ['dipanggil', 'Sudah'])
+                    ->where('status_barcode', 'Belum')
+                    ->orderBy('no_urut', 'asc')
                     ->first();
+                if (!$DK) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Tidak ada antrian VB yang tersisa.',
+                        'as' => '@Kurisu'
+                    ], 404);
+                }
                 $nik = $DK->nik;
                 $res_id = $DK->id;
                                 
             } else if ($request->jenis_antrian == 'FT') {
-                $DB = Pembayaran::from('pembayaran_t as pb')
-                    ->join('reservasis as rev','rev.id','=','pb.reservasi_id')
-                    ->whereDate('pb.created_at', $todayDate)
-                    ->where('rev.lokasi', $request->lokasi)
-                    ->where('rev.status_foto', 'Belum')
-                    ->orderby('rev.no_urut', 'asc')
-                    ->select('rev.id','rev.nik')
+                $DB = Reservasi::whereDate('tanggal_reservasi', $todayDate)
+                    ->where('lokasi', $request->lokasi)
+                    ->whereIn('status_barcode', ['dipanggil', 'Sudah'])
+                    ->where('status_foto', 'Belum')
+                    ->orderBy('no_urut', 'asc')
                     ->first();
+                if (!$DB) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Tidak ada antrian FT yang tersisa.',
+                        'as' => '@Kurisu'
+                    ], 404);
+                }
                 $nik = $DB->nik;
                 $res_id = $DB->id;
 
             } else if ($request->jenis_antrian == 'AS') {
-                $DF = Pembayaran::from('pembayaran_t as pb')
-                    ->join('reservasis as rev','rev.id','=','pb.reservasi_id')
-                    ->whereDate('pb.created_at', $todayDate)
-                    ->where('rev.lokasi', $request->lokasi)
-                    ->select('rev.id','rev.nik')
+                $DF = Reservasi::whereDate('tanggal_reservasi', $todayDate)
+                    ->where('lokasi', $request->lokasi)
+                    ->whereIn('status_foto', ['dipanggil', 'Sudah'])
+                    ->where('status_sim', 'Belum')
+                    ->orderBy('no_urut', 'asc')
                     ->first();
+                if (!$DF) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Tidak ada antrian AS yang tersisa.',
+                        'as' => '@Kurisu'
+                    ], 404);
+                }
                 $nik = $DF->nik;
                 $res_id = $DF->id;
 
@@ -207,6 +226,13 @@ class ReservasiController extends Controller
                     ->where('lokasi', $request->lokasi)
                     ->select('id', 'nik')
                     ->first();
+                if (!$data) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Data reservasi tidak ditemukan.',
+                        'as' => '@Kurisu'
+                    ], 404);
+                }
                 $nik = $data->nik;
                 $res_id = $data->id;
 
@@ -306,11 +332,10 @@ class ReservasiController extends Controller
             ->where('rev.lokasi', $request->lokasi)
             ->count();
 
-        $vbBelum = Kesehatan::from('kesehatan_t as ks')
-            ->join('reservasis as rev', 'rev.id','=','ks.reservasi_id')
-            ->whereDate('ks.created_at', $todayDate)
-            ->where('rev.status_barcode', 'Belum')
-            ->where('rev.lokasi', $request->lokasi)
+        $vbBelum = Reservasi::whereDate('tanggal_reservasi', $todayDate)
+            ->whereIn('status', ['dipanggil', 'Sudah'])
+            ->where('status_barcode', 'Belum')
+            ->where('lokasi', $request->lokasi)
             ->count();
 
         $vbSudah = PanggilAntrian::from('panggil_antrian_t as pa')
@@ -321,11 +346,10 @@ class ReservasiController extends Controller
             ->where('rev.lokasi', $request->lokasi)
             ->count();
 
-        $ftBelum = Pembayaran::from('pembayaran_t as pb')
-            ->join('reservasis as rev', 'rev.id','=','pb.reservasi_id')
-            ->whereDate('pb.created_at', $todayDate)
-            ->where('rev.status_foto', 'Belum')
-            ->where('rev.lokasi', $request->lokasi)
+        $ftBelum = Reservasi::whereDate('tanggal_reservasi', $todayDate)
+            ->whereIn('status_barcode', ['dipanggil', 'Sudah'])
+            ->where('status_foto', 'Belum')
+            ->where('lokasi', $request->lokasi)
             ->count();
 
         $ftSudah = PanggilAntrian::from('panggil_antrian_t as pa')
@@ -336,11 +360,10 @@ class ReservasiController extends Controller
             ->where('rev.lokasi', $request->lokasi)
             ->count();
 
-        $asBelum = Pembayaran::from('pembayaran_t as pb')
-            ->join('reservasis as rev', 'rev.id','=','pb.reservasi_id')
-            ->whereDate('pb.created_at', $todayDate)
-            ->where('rev.status_sim', 'Belum')
-            ->where('rev.lokasi', $request->lokasi)
+        $asBelum = Reservasi::whereDate('tanggal_reservasi', $todayDate)
+            ->whereIn('status_foto', ['dipanggil', 'Sudah'])
+            ->where('status_sim', 'Belum')
+            ->where('lokasi', $request->lokasi)
             ->count();
 
         $asSudah = PanggilAntrian::from('panggil_antrian_t as pa')
@@ -438,6 +461,39 @@ class ReservasiController extends Controller
                 ->whereDate('pa.created_at', $todayDate)
                 ->where('pa.status', 'dipanggil')
                 ->where('pa.kdkebutuhan', 'BB')
+                ->where('rev.lokasi', $DSJ->lokasi)
+                ->orderBy('pa.created_at', 'desc')
+                ->select('pa.no_urut', 'pa.kdkebutuhan')
+                ->first();
+
+            $ASIVB = PanggilAntrian::from('panggil_antrian_t as pa')
+                ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+                ->where('pa.statusenabled', true)
+                ->whereDate('pa.created_at', $todayDate)
+                ->where('pa.status', 'dipanggil')
+                ->where('pa.kdkebutuhan', 'VB')
+                ->where('rev.lokasi', $DSJ->lokasi)
+                ->orderBy('pa.created_at', 'desc')
+                ->select('pa.no_urut', 'pa.kdkebutuhan')
+                ->first();
+
+            $ASIFT = PanggilAntrian::from('panggil_antrian_t as pa')
+                ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+                ->where('pa.statusenabled', true)
+                ->whereDate('pa.created_at', $todayDate)
+                ->where('pa.status', 'dipanggil')
+                ->where('pa.kdkebutuhan', 'FT')
+                ->where('rev.lokasi', $DSJ->lokasi)
+                ->orderBy('pa.created_at', 'desc')
+                ->select('pa.no_urut', 'pa.kdkebutuhan')
+                ->first();
+
+            $ASIAS = PanggilAntrian::from('panggil_antrian_t as pa')
+                ->join('reservasis as rev','rev.id','=','pa.reservasi_id')
+                ->where('pa.statusenabled', true)
+                ->whereDate('pa.created_at', $todayDate)
+                ->where('pa.status', 'dipanggil')
+                ->where('pa.kdkebutuhan', 'AS')
                 ->where('rev.lokasi', $DSJ->lokasi)
                 ->orderBy('pa.created_at', 'desc')
                 ->select('pa.no_urut', 'pa.kdkebutuhan')
@@ -553,6 +609,9 @@ class ReservasiController extends Controller
                 'lokasi' => $DSJ->lokasi,
                 'saatiniPP' => $ASIPP ? $ASIPP->kdkebutuhan . '-' . $ASIPP->no_urut : null,
                 'saatiniBB' => $ASIBB ? $ASIBB->kdkebutuhan . '-' . $ASIBB->no_urut : null,
+                'saatiniVB' => $ASIVB ? $ASIVB->kdkebutuhan . '-' . $ASIVB->no_urut : null,
+                'saatiniFT' => $ASIFT ? $ASIFT->kdkebutuhan . '-' . $ASIFT->no_urut : null,
+                'saatiniAS' => $ASIAS ? $ASIAS->kdkebutuhan . '-' . $ASIAS->no_urut : null,
                 'estimasiLayanPP' => $estimasiLayanPP,
                 'estimasiLayanBB' => $estimasiLayanBB,
                 'data' => $DSJ,

@@ -31,6 +31,15 @@ return new class extends Migration
             $table->string('sertifikat');
             $table->string('lokasi');
             $table->string('jenis_perpanjangan');
+            $table->boolean('statusenabled')->default(true);
+            $table->integer('no_urut')->nullable();
+            $table->string('kebutuhan')->nullable();
+            $table->string('sim')->nullable();
+            $table->string('status')->default('Belum');
+            $table->string('status_barcode')->default('Belum')->nullable();
+            $table->string('status_foto')->default('Belum')->nullable();
+            $table->string('status_sim')->default('Belum')->nullable();
+            $table->string('status_bayar')->default('Belum')->nullable();
             $table->timestamps();
 
         });

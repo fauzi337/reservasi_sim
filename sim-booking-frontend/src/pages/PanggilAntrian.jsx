@@ -17,7 +17,7 @@ function PanggilAntrianPage({ showToast }) {
   const [showFullForm, setShowFullForm] = useState(localStorage.getItem('showFullForm') === 'true');
 
   const jenisAntrianList = ['PP', 'BB','VB','FT','AS'];
-  const loketList = ['Loket 1', 'Loket 2', 'Loket 3'];
+  const loketList = ['Loket 1', 'Loket 2', 'Loket 3', 'Loket 4'];
   const lokasiList = ['--Silahkan Pilih Lokasi--','Polres A', 'Polres B', 'Polres C'];
 
   const [antrianData, setAntrianData] = useState({
@@ -70,9 +70,33 @@ function PanggilAntrianPage({ showToast }) {
 
     const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
-        const indoVoice = voices.find(v => v.lang === 'id-ID');
-        if (indoVoice) {
-        utter.voice = indoVoice;
+        const indoVoices = voices.filter(v => v.lang === 'id-ID' || v.lang.startsWith('id-'));
+        
+        // Prioritaskan suara perempuan: Gadis (Microsoft), Damayanti (macOS), Google, dll.
+        let femaleVoice = indoVoices.find(v => {
+            const name = v.name.toLowerCase();
+            return name.includes('gadis') || 
+                   name.includes('damayanti') || 
+                   name.includes('google') || 
+                   name.includes('female') ||
+                   name.includes('dina');
+        });
+        
+        // Fallback ke suara yang tidak memiliki indikasi laki-laki (Ardi, Andika, Sandi, Wira, Male)
+        if (!femaleVoice) {
+            femaleVoice = indoVoices.find(v => {
+                const name = v.name.toLowerCase();
+                return !name.includes('ardi') && 
+                       !name.includes('andika') && 
+                       !name.includes('sandi') && 
+                       !name.includes('wira') && 
+                       !name.includes('male');
+            });
+        }
+        
+        const selectedVoice = femaleVoice || indoVoices[0] || voices.find(v => v.lang.startsWith('id'));
+        if (selectedVoice) {
+            utter.voice = selectedVoice;
         }
         window.speechSynthesis.speak(utter);
     };

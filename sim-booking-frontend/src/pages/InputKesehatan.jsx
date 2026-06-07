@@ -149,7 +149,7 @@ export default function InputKesehatan({ showToast }) {
     }
   };
 
-  const isFormLengkap = Object.values(kesehatanData).every(val => val.trim() !== '');
+  const isFormLengkap = Object.values(kesehatanData).every(val => String(val ?? '').trim() !== '');
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
